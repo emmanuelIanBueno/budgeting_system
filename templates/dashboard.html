@@ -1,0 +1,538 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard — FYP Budget Management{% endblock %}
+
+{% block content %}
+<div class="space-y-6 pb-8">
+
+    <!-- Top Filter Bar: Dynamic Month Selector -->
+    <div class="bg-white rounded-2xl p-4 sm:px-6 sm:py-4 border border-slate-100 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                <i data-lucide="calendar" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <h2 class="text-base font-bold text-slate-900">Monthly Overview</h2>
+                <p class="text-xs text-slate-400">Viewing financial analytics for <span class="font-bold text-blue-600">{{ selected_month_name }}</span></p>
+            </div>
+        </div>
+
+        <!-- Month Dropdown (Only includes months with recorded data) -->
+        <div class="flex items-center gap-3">
+            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider hidden sm:inline-block">Select Month:</span>
+            <div class="relative min-w-[200px]">
+                <select id="monthFilterSelect" 
+                        onchange="window.location.href = '{{ url_for('dashboard') }}?month=' + this.value;" 
+                        class="w-full bg-slate-50 hover:bg-slate-100/90 text-xs font-bold text-slate-800 border border-slate-200 rounded-xl px-4 py-2.5 pr-9 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer appearance-none transition shadow-sm">
+                    {% if available_months %}
+                        {% for m in available_months %}
+                            <option value="{{ m.month_key }}" {% if m.month_key == selected_month_str %}selected{% endif %}>
+                                {{ m.month_label }}
+                            </option>
+                        {% endfor %}
+                    {% else %}
+                        <option value="" disabled selected>No recorded months</option>
+                    {% endif %}
+                </select>
+                <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI Metric Cards (4 Cards in a Row) -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        
+        <!-- Card 1: Monthly Income -->
+        <div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full bg-teal-50 border border-teal-100/60 flex items-center justify-center text-teal-600 shrink-0 shadow-inner">
+                    <i data-lucide="home" class="w-6 h-6"></i>
+                </div>
+                <div class="min-w-0">
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Monthly Income</p>
+                    <h3 class="text-2xl font-extrabold text-slate-900 tracking-tight mt-0.5">
+                        ₱ {{ "{:,.0f}".format(monthly_income) }}
+                    </h3>
+                    <p class="text-xs text-slate-400 font-medium mt-0.5">Target for {{ selected_month_name }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 2: Total Spent -->
+        <div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full bg-rose-50 border border-rose-100/60 flex items-center justify-center text-rose-500 shrink-0 shadow-inner">
+                    <i data-lucide="credit-card" class="w-6 h-6"></i>
+                </div>
+                <div class="min-w-0">
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Spent</p>
+                    <h3 class="text-2xl font-extrabold text-slate-900 tracking-tight mt-0.5">
+                        ₱ {{ "{:,.0f}".format(total_spent) }}
+                    </h3>
+                    <p class="text-xs text-slate-400 font-medium mt-0.5">{{ spent_percentage }}% of {{ selected_month_name }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 3: Remaining Budget -->
+        <div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full bg-emerald-50 border border-emerald-100/60 flex items-center justify-center text-emerald-600 shrink-0 shadow-inner">
+                    <i data-lucide="wallet-cards" class="w-6 h-6"></i>
+                </div>
+                <div class="min-w-0">
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Remaining Budget</p>
+                    <h3 class="text-2xl font-extrabold text-slate-900 tracking-tight mt-0.5">
+                        ₱ {{ "{:,.0f}".format(remaining_budget) }}
+                    </h3>
+                    <p class="text-xs text-slate-400 font-medium mt-0.5">{{ remaining_percentage }}% left for {{ selected_month_name }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 4: Savings -->
+        <div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full bg-purple-50 border border-purple-100/60 flex items-center justify-center text-purple-600 shrink-0 shadow-inner">
+                    <i data-lucide="piggy-bank" class="w-6 h-6"></i>
+                </div>
+                <div class="min-w-0">
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Savings</p>
+                    <h3 class="text-2xl font-extrabold text-slate-900 tracking-tight mt-0.5">
+                        ₱ {{ "{:,.0f}".format(savings) }}
+                    </h3>
+                    <p class="text-xs text-slate-400 font-medium mt-0.5">{{ savings_percentage }}% of income saved</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Charts Section (Spending Overview & Monthly Trend) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Left: Spending Overview (5 cols) -->
+        <div class="lg:col-span-5 bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h2 class="text-base sm:text-lg font-bold text-slate-900">Monthly Spending Overview</h2>
+                        <p class="text-xs text-slate-400 font-medium">{{ selected_month_name }}</p>
+                    </div>
+                    <a href="{{ url_for('add_expense') }}" class="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1">
+                        + Add Expense
+                    </a>
+                </div>
+
+                <!-- Donut Chart & Category Breakdown Container -->
+                <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center mt-2">
+                    
+                    <!-- Donut Chart Canvas with Center Text Overlay -->
+                    <div class="sm:col-span-6 relative flex items-center justify-center">
+                        <div class="w-48 h-48 sm:w-44 sm:h-44 relative">
+                            <canvas id="spendingDonutChart"></canvas>
+                            <!-- Center Total Label -->
+                            <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
+                                <span class="text-[11px] font-bold text-slate-400">Total Spent</span>
+                                <span class="text-sm sm:text-base font-extrabold text-slate-900 tracking-tight">₱ {{ "{:,.0f}".format(total_spent) }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Category Breakdown Legend List -->
+                    <div class="sm:col-span-6 space-y-2.5">
+                        {% if category_data %}
+                            {% for cat in category_data %}
+                            <div class="flex items-center justify-between text-xs py-0.5 hover:bg-slate-50 rounded-lg px-1.5 transition-colors">
+                                <div class="flex items-center gap-2 min-w-0">
+                                    <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color: {{ cat.color }};"></span>
+                                    <span class="font-medium text-slate-700 truncate">{{ cat.name }}</span>
+                                </div>
+                                <div class="flex items-center gap-3 shrink-0">
+                                    <span class="text-slate-400 font-medium">{{ cat.pct }}%</span>
+                                    <span class="font-bold text-slate-900">₱ {{ "{:,.0f}".format(cat.amount) }}</span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="py-6 text-center text-slate-400">
+                                <p class="text-xs font-semibold text-slate-600">No expenses for {{ selected_month_name }}</p>
+                                <p class="text-[11px] text-slate-400 mt-1">Transactions logged for {{ selected_month_name }} will appear here.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Quick Action Shortcut Footer -->
+            <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                <span>{{ category_data|length }} active categories</span>
+                <a href="{{ url_for('add_budget') }}" class="font-semibold text-blue-600 hover:underline">Adjust Limits &rarr;</a>
+            </div>
+        </div>
+
+        <!-- Right: Monthly Spending Trend (7 cols - Unchanged) -->
+        <div class="lg:col-span-7 bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between">
+            <div>
+                <!-- Header with Title & Filter Dropdown -->
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-base sm:text-lg font-bold text-slate-900">Monthly Spending Trend</h2>
+                    <div class="relative">
+                        <select class="text-xs font-semibold text-slate-600 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer appearance-none">
+                            <option>Last 6 Months</option>
+                            <option>This Year</option>
+                        </select>
+                        <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                    </div>
+                </div>
+
+                <!-- Trend Line Canvas -->
+                <div class="h-52 sm:h-56 relative w-full">
+                    <canvas id="monthlyTrendChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Expense History Section (Directly inside Main Dashboard) -->
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <div class="p-5 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="flex items-center gap-3.5">
+                <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                    <i data-lucide="receipt-text" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h2 class="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+                        Expense History
+                        <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">{{ expenses_history|length }}</span>
+                    </h2>
+                    <p class="text-xs text-slate-400">Showing transactions for <span class="font-semibold text-slate-600">{{ selected_month_name }}</span></p>
+                </div>
+            </div>
+            <a href="{{ url_for('add_expense') }}" class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 shadow-sm shadow-blue-600/20 transition cursor-pointer">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+                <span>Add Expense</span>
+            </a>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-slate-50 text-slate-400 text-[11px] font-bold uppercase tracking-wider border-b border-slate-100">
+                    <tr>
+                        <th class="py-3.5 px-6">Date</th>
+                        <th class="py-3.5 px-6">Category</th>
+                        <th class="py-3.5 px-6">Description</th>
+                        <th class="py-3.5 px-6 text-right">Amount</th>
+                        <th class="py-3.5 px-6 text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-slate-700">
+                    {% if expenses_history %}
+                        {% for exp in expenses_history %}
+                        <tr class="hover:bg-slate-50/70 transition-colors">
+                            <td class="py-3.5 px-6 text-xs font-medium text-slate-500 whitespace-nowrap">
+                                {{ exp.date_display }}
+                            </td>
+                            <td class="py-3.5 px-6 whitespace-nowrap">
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-800">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                                    {{ exp.category }}
+                                </span>
+                            </td>
+                            <td class="py-3.5 px-6 text-xs text-slate-600 max-w-xs truncate">
+                                {{ exp.description if exp.description else '—' }}
+                            </td>
+                            <td class="py-3.5 px-6 text-right font-bold text-slate-900 whitespace-nowrap">
+                                ₱ {{ "{:,.2f}".format(exp.amount) }}
+                            </td>
+                            <td class="py-3.5 px-6 text-center whitespace-nowrap">
+                                <div class="flex items-center justify-center gap-1">
+                                    <button type="button" 
+                                            onclick="openEditModal('{{ exp.id }}', '{{ exp.category|e }}', '{{ exp.amount }}', '{{ exp.description|e }}', '{{ exp.date_raw }}')"
+                                            class="p-2 rounded-xl text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition cursor-pointer"
+                                            title="Edit Transaction">
+                                        <i data-lucide="edit-3" class="w-4 h-4"></i>
+                                    </button>
+                                    <form method="POST" action="{{ url_for('delete_expense', expense_id=exp.id) }}" class="inline" onsubmit="return confirm('Are you sure you want to delete this expense record?');">
+                                        <button type="submit" 
+                                                class="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer" 
+                                                title="Delete Transaction">
+                                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="5" class="py-12 text-center text-slate-400">
+                                <div class="flex flex-col items-center justify-center gap-2">
+                                    <div class="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400">
+                                        <i data-lucide="receipt" class="w-6 h-6"></i>
+                                    </div>
+                                    <p class="text-sm font-semibold text-slate-700">No expenses recorded for {{ selected_month_name }}</p>
+                                    <p class="text-xs text-slate-400 max-w-sm">Transactions you log for this month will appear here with editing and deletion controls.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Quick Action Shortcut Card (AI Prediction only) -->
+    <div class="grid grid-cols-1 md:grid-cols-1 gap-5">
+        <a href="{{ url_for('predict') }}" class="group bg-white rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-md hover:border-purple-200 transition-all flex items-center justify-between">
+            <div class="flex items-center justify-center gap-3.5 flex-1">
+                <div class="w-11 h-11 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <i data-lucide="sparkles" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h4 class="text-sm font-bold text-slate-800 group-hover:text-purple-600 transition-colors">Overspending Risk</h4>
+                    <p class="text-xs text-slate-400">Run machine learning forecast</p>
+                </div>
+            </div>
+            <i data-lucide="arrow-right" class="w-4 h-4 text-slate-300 group-hover:text-purple-600 group-hover:translate-x-1 transition-all"></i>
+        </a>
+    </div>
+
+</div>
+
+<!-- Edit Expense Modal -->
+<div id="editExpenseModal" class="fixed inset-0 z-50 hidden bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
+        <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+            <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                    <i data-lucide="edit-3" class="w-4 h-4"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-slate-900">Edit Expense</h3>
+                    <p class="text-[11px] text-slate-400">Update transaction details</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeEditModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-xl hover:bg-slate-100 transition cursor-pointer">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <form id="editExpenseForm" method="POST" action="" class="space-y-4 mt-5">
+            <!-- Category -->
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Category</label>
+                <div class="relative">
+                    <select id="edit_category" name="category" required class="block w-full px-3.5 py-2.5 text-sm font-semibold border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none appearance-none bg-white cursor-pointer">
+                        <option value="Food & Dining">Food & Dining</option>
+                        <option value="Transportation">Transportation</option>
+                        <option value="Entertainment & Leisure">Entertainment & Leisure</option>
+                        <option value="Utilities & Bills">Utilities & Bills</option>
+                        <option value="Miscellaneous / Others">Miscellaneous / Others</option>
+                    </select>
+                    <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                </div>
+            </div>
+
+            <!-- Amount -->
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Amount (₱)</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 font-bold text-sm">₱</span>
+                    <input type="number" id="edit_amount" name="amount" step="0.01" min="0.01" required class="block w-full pl-8 pr-3.5 py-2.5 text-sm font-semibold border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                </div>
+            </div>
+
+            <!-- Description -->
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Description</label>
+                <input type="text" id="edit_description" name="description" placeholder="Optional notes" class="block w-full px-3.5 py-2.5 text-sm font-semibold border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            </div>
+
+            <!-- Expense Date -->
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Date</label>
+                <input type="date" id="edit_date" name="expense_date" required class="block w-full px-3.5 py-2.5 text-sm font-semibold border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none cursor-pointer">
+            </div>
+
+            <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+                <button type="button" onclick="closeEditModal()" class="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition cursor-pointer">
+                    Cancel
+                </button>
+                <button type="submit" class="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-sm shadow-blue-600/30 transition cursor-pointer">
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function openEditModal(id, category, amount, description, date) {
+        const modal = document.getElementById('editExpenseModal');
+        const form = document.getElementById('editExpenseForm');
+        form.action = '/edit_expense/' + id;
+        
+        const catSelect = document.getElementById('edit_category');
+        let matched = false;
+        for (let opt of catSelect.options) {
+            if (opt.value.toLowerCase() === (category || '').toLowerCase()) {
+                catSelect.value = opt.value;
+                matched = true;
+                break;
+            }
+        }
+        if (!matched) {
+            // Check partial prefix match or default to Miscellaneous / Others
+            for (let opt of catSelect.options) {
+                if (category && (opt.value.toLowerCase().includes(category.toLowerCase()) || category.toLowerCase().includes(opt.value.toLowerCase().split(' ')[0]))) {
+                    catSelect.value = opt.value;
+                    matched = true;
+                    break;
+                }
+            }
+            if (!matched) {
+                catSelect.value = 'Miscellaneous / Others';
+            }
+        }
+
+        document.getElementById('edit_amount').value = amount;
+        document.getElementById('edit_description').value = description;
+        document.getElementById('edit_date').value = date;
+        modal.classList.remove('hidden');
+        if (window.lucide) { lucide.createIcons(); }
+    }
+
+    function closeEditModal() {
+        const modal = document.getElementById('editExpenseModal');
+        modal.classList.add('hidden');
+    }
+
+    // Close modal when clicking outside modal box
+    window.addEventListener('click', (e) => {
+        const modal = document.getElementById('editExpenseModal');
+        if (e.target === modal) {
+            closeEditModal();
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // Refresh icons on render
+        if (window.lucide) { lucide.createIcons(); }
+
+        // 1. Spending Overview Donut Chart
+        const categoryLabels = {{ category_data | map(attribute='name') | list | tojson }};
+        const categoryAmounts = {{ category_data | map(attribute='amount') | list | tojson }};
+        const categoryColors = {{ category_data | map(attribute='color') | list | tojson }};
+
+        const donutCtx = document.getElementById('spendingDonutChart').getContext('2d');
+        const hasCategoryData = categoryAmounts.length > 0;
+
+        new Chart(donutCtx, {
+            type: 'doughnut',
+            data: {
+                labels: hasCategoryData ? categoryLabels : ['No Expenses'],
+                datasets: [{
+                    data: hasCategoryData ? categoryAmounts : [1],
+                    backgroundColor: hasCategoryData ? categoryColors : ['#f1f5f9'],
+                    borderWidth: hasCategoryData ? 3 : 1,
+                    borderColor: '#ffffff',
+                    hoverOffset: hasCategoryData ? 4 : 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '72%',
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        enabled: hasCategoryData,
+                        callbacks: {
+                            label: function(context) {
+                                return ` ${context.label}: ₱${Number(context.raw).toLocaleString()}`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // 2. Monthly Spending Trend Line Chart (Unchanged - Shows 6-month trend)
+        const trendLabels = {{ trend_labels | tojson }};
+        const trendAmounts = {{ trend_amounts | tojson }};
+
+        const trendCtx = document.getElementById('monthlyTrendChart').getContext('2d');
+        
+        // Gradient fill matching mockup
+        const gradient = trendCtx.createLinearGradient(0, 0, 0, 200);
+        gradient.addColorStop(0, 'rgba(37, 99, 235, 0.22)');
+        gradient.addColorStop(1, 'rgba(37, 99, 235, 0.00)');
+
+        new Chart(trendCtx, {
+            type: 'line',
+            data: {
+                labels: trendLabels,
+                datasets: [{
+                    label: 'Spent',
+                    data: trendAmounts,
+                    borderColor: '#2563eb',
+                    borderWidth: 2.5,
+                    fill: true,
+                    backgroundColor: gradient,
+                    tension: 0.35,
+                    pointBackgroundColor: '#ffffff',
+                    pointBorderColor: '#2563eb',
+                    pointBorderWidth: 2.5,
+                    pointRadius: 4.5,
+                    pointHoverRadius: 6.5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return ` ₱${Number(context.raw).toLocaleString()}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(226, 232, 240, 0.6)',
+                            drawBorder: false
+                        },
+                        ticks: {
+                            font: { size: 10, family: "'Plus Jakarta Sans', sans-serif" },
+                            color: '#94a3b8',
+                            callback: function(value) {
+                                if (value >= 1000) {
+                                    return (value / 1000) + 'k';
+                                }
+                                return value;
+                            }
+                        }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: {
+                            font: { size: 11, family: "'Plus Jakarta Sans', sans-serif" },
+                            color: '#64748b'
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

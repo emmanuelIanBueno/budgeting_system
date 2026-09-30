@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-[#0B1325]">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FYP Budget Management — Plan Today. Secure Tomorrow.</title>
+    
+    <!-- Google Fonts: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    </style>
+</head>
+<body class="min-h-full bg-[#0B1325] text-slate-100 flex flex-col justify-between relative overflow-x-hidden">
+
+    <!-- Ambient glow backgrounds -->
+    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-blue-600/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute top-80 right-0 w-[450px] h-[450px] bg-teal-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+    <!-- Top Navigation Header -->
+    <header class="w-full max-w-7xl mx-auto px-6 sm:px-10 py-6 flex items-center justify-between relative z-20">
+        <a href="{{ url_for('home') }}" class="flex items-center gap-3 group">
+            <div class="w-11 h-11 rounded-2xl bg-teal-500/20 border border-teal-500/40 flex items-center justify-center text-teal-400 group-hover:scale-105 transition-transform shadow-xl shadow-teal-500/10">
+                <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h3v3a1 1 0 0 1-1 1H5a2 2 0 0 1-2-2V6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <rect x="16" y="11" width="6" height="6" rx="2" fill="#2dd4bf" stroke="#14b8a6" stroke-width="1.5"/>
+                    <circle cx="19" cy="14" r="1" fill="#0f172a"/>
+                </svg>
+            </div>
+            <div>
+                <div class="font-extrabold text-xl tracking-tight text-white flex items-center gap-1.5">
+                    FYP <span class="text-teal-400">Budget Management</span>
+                </div>
+                <p class="text-[10px] text-slate-400 font-medium">Plan Today. Secure Tomorrow.</p>
+            </div>
+        </a>
+
+        <div class="flex items-center gap-3">
+            <a href="{{ url_for('login') }}" class="px-5 py-2.5 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition">
+                Sign In
+            </a>
+            <a href="{{ url_for('register') }}" class="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-600/30 transition hover:-translate-y-0.5">
+                Get Started
+            </a>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <main class="w-full max-w-5xl mx-auto px-6 sm:px-10 py-20 sm:py-32 text-center relative z-10 flex flex-col items-center">
+        
+        <!-- Tagline badge -->
+        <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-teal-500/10 border border-teal-500/30 text-teal-300 text-xs font-bold mb-6">
+            <i data-lucide="sparkles" class="w-4 h-4"></i>
+            <span>Machine Learning Powered Budget Management</span>
+        </div>
+
+        <h1 class="text-4xl sm:text-6xl font-black tracking-tight text-white max-w-3xl leading-tight sm:leading-none">
+            Plan Today. <br class="hidden sm:inline" />
+            <span class="bg-gradient-to-r from-blue-400 via-teal-300 to-emerald-400 bg-clip-text text-transparent">
+                Secure Tomorrow.
+            </span>
+        </h1>
+
+        <p class="mt-6 text-base sm:text-lg text-slate-300 max-w-2xl font-medium leading-relaxed">
+            Take full control of your finances with automated category tracking, live visual analytics, and AI models that forecast overspending risks before month's end.
+        </p>
+
+        <!-- CTA Action Buttons -->
+        <div class="mt-10 flex flex-col sm:flex-row items-center gap-4">
+            <a href="{{ url_for('register') }}" class="w-full sm:w-auto px-8 py-4 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-sm shadow-xl shadow-blue-600/30 transition-all hover:-translate-y-0.5 flex items-center justify-center gap-2">
+                <span>Start Budgeting Now</span>
+                <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </a>
+            <a href="{{ url_for('login') }}" class="w-full sm:w-auto px-8 py-4 rounded-2xl bg-slate-800/80 hover:bg-slate-800 text-slate-200 border border-slate-700 font-bold text-sm transition-all">
+                Existing User? Sign In
+            </a>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full border-t border-slate-800/80 py-6 text-center text-xs text-slate-500 relative z-10">
+        <p>FYP Budget Management &bull; Thesis Project</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.lucide) lucide.createIcons();
+        });
+    </script>
+</body>
+</html>

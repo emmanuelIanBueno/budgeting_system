@@ -1,0 +1,326 @@
+{% extends "base.html" %}
+
+{% block title %}Record Expense — FYP Budget Management{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6 pb-12">
+
+    <!-- Header & Breadcrumb -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+                <span>Record Expense</span>
+            </h2>
+            <p class="text-xs sm:text-sm text-slate-500 font-medium">Log multiple daily transactions in seconds with real-time background saving.</p>
+        </div>
+        <a href="{{ url_for('dashboard') }}" class="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i>
+            <span>Back to Dashboard</span>
+        </a>
+    </div>
+
+    <!-- Live Toast Alert for Instant Feedback -->
+    <div id="rapid-toast" class="hidden p-3.5 rounded-2xl text-xs font-bold border transition-all duration-300 flex items-center justify-between shadow-sm">
+        <div class="flex items-center gap-2" id="rapid-toast-content">
+            <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+            <span id="rapid-toast-text">Transaction saved!</span>
+        </div>
+        <button type="button" onclick="document.getElementById('rapid-toast').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
+            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+        </button>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+        <!-- Left: Rapid Log Form Card (7 cols) -->
+        <div class="lg:col-span-7 bg-white rounded-3xl p-6 sm:p-7 border border-slate-100 shadow-sm space-y-5">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                        <i data-lucide="zap" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-900">Transaction details</h3>
+                        <p class="text-xs text-slate-400">Press Enter or click Log to save instantly</p>
+                    </div>
+                </div>
+            </div>
+
+            <form id="rapidExpenseForm" method="POST" action="{{ url_for('add_expense') }}" class="space-y-4">
+                
+                <!-- Category Selector -->
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label for="category-select" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Category</label>
+                        <span class="text-[11px] text-slate-400">Quick Pills Below</span>
+                    </div>
+                    <div class="relative rounded-2xl shadow-sm">
+                        <select id="category-select" name="category" required class="block w-full px-4 py-3 text-sm font-semibold border border-slate-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition cursor-pointer appearance-none bg-white">
+                            <option value="Food & Dining" selected>🍔 Food & Dining</option>
+                            <option value="Transportation">🚗 Transportation</option>
+                            <option value="Entertainment & Leisure">🎮 Entertainment & Leisure</option>
+                            <option value="Utilities & Bills">💡 Utilities & Bills</option>
+                            <option value="Miscellaneous / Others">📦 Miscellaneous / Others</option>
+                        </select>
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                    </div>
+
+                    <!-- Quick Category Shortcut Pills -->
+                    <div class="flex flex-wrap gap-1.5 pt-2">
+                        <button type="button" onclick="selectCat('Food & Dining')" class="px-2.5 py-1 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200/60 text-[11px] font-medium transition cursor-pointer">
+                            🍔 Food & Dining
+                        </button>
+                        <button type="button" onclick="selectCat('Transportation')" class="px-2.5 py-1 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/60 text-[11px] font-medium transition cursor-pointer">
+                            🚗 Transportation
+                        </button>
+                        <button type="button" onclick="selectCat('Entertainment & Leisure')" class="px-2.5 py-1 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200/60 text-[11px] font-medium transition cursor-pointer">
+                            🎮 Entertainment & Leisure
+                        </button>
+                        <button type="button" onclick="selectCat('Utilities & Bills')" class="px-2.5 py-1 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200/60 text-[11px] font-medium transition cursor-pointer">
+                            💡 Utilities & Bills
+                        </button>
+                        <button type="button" onclick="selectCat('Miscellaneous / Others')" class="px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300/60 text-[11px] font-medium transition cursor-pointer">
+                            📦 Miscellaneous / Others
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Expense Amount -->
+                <div>
+                    <label for="amount-input" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Expense Amount (₱)</label>
+                    <div class="relative rounded-2xl shadow-sm">
+                        <span class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 font-bold text-base">₱</span>
+                        <input type="number" id="amount-input" name="amount" step="0.01" min="0.01" required placeholder="0.00" autofocus class="block w-full pl-9 pr-4 py-3 text-base font-bold text-slate-900 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition">
+                    </div>
+                </div>
+
+                <!-- Description / Note -->
+                <div>
+                    <label for="desc-input" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Description (Optional)</label>
+                    <input type="text" id="desc-input" name="description" placeholder="e.g. Lunch with thesis team, jeepney fare, snacks" class="block w-full px-4 py-3 text-sm font-medium border border-slate-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition">
+                </div>
+
+                <!-- Transaction Date (Defaulted to Today Automatically) -->
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label for="expense_date" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Transaction Date</label>
+                        <span class="text-[11px] font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">Defaults to Today</span>
+                    </div>
+                    <div class="relative rounded-2xl shadow-sm">
+                        <span class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                            <i data-lucide="calendar" class="w-4 h-4"></i>
+                        </span>
+                        <input type="date" id="expense_date" name="expense_date" value="{{ today_str }}" required class="block w-full pl-11 pr-4 py-3 text-sm font-semibold border border-slate-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition cursor-pointer">
+                    </div>
+                </div>
+
+                <!-- Action Button -->
+                <button type="submit" id="log-submit-btn" class="w-full py-3.5 px-6 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center gap-2 hover:-translate-y-0.5 cursor-pointer mt-5">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    <span>+ Log Transaction</span>
+                </button>
+
+                <p class="text-center text-[11px] text-slate-400 pt-1">
+                    💡 <span class="font-semibold text-slate-600">Pro Tip:</span> Press <kbd class="px-1.5 py-0.5 bg-slate-100 rounded text-slate-700 font-bold border border-slate-200 text-[10px]">Enter</kbd> to save and immediately type your next expense.
+                </p>
+            </form>
+        </div>
+
+        <!-- Right: Mini Daily History Table ("Expenses Logged Today") (5 cols) -->
+        <div class="lg:col-span-5 space-y-5">
+            <div class="bg-white rounded-3xl p-5 sm:p-6 border border-slate-100 shadow-sm space-y-4">
+                <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                            <i data-lucide="clock" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-bold text-slate-900">Expenses Logged Today</h4>
+                            <p class="text-[11px] text-slate-400">Live feed for {{ today_str }}</p>
+                        </div>
+                    </div>
+                    <span id="today-count-badge" class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                        {{ today_expenses|length }} items
+                    </span>
+                </div>
+
+                <!-- Mini Scrollable Table -->
+                <div class="max-h-64 overflow-y-auto rounded-2xl border border-slate-100">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-50 text-slate-400 text-[10px] font-bold uppercase tracking-wider sticky top-0 z-10 border-b border-slate-100">
+                            <tr>
+                                <th class="py-2 px-3">Category</th>
+                                <th class="py-2 px-3">Description</th>
+                                <th class="py-2 px-3 text-right">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody id="today-expenses-body" class="divide-y divide-slate-100 text-slate-700">
+                            {% if today_expenses %}
+                                {% for item in today_expenses %}
+                                <tr class="hover:bg-slate-50/80 transition-colors">
+                                    <td class="py-2.5 px-3 font-semibold text-slate-800 whitespace-nowrap">
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] bg-slate-100 text-slate-700 font-medium">
+                                            {{ item.category }}
+                                        </span>
+                                    </td>
+                                    <td class="py-2.5 px-3 text-slate-500 truncate max-w-[120px]" title="{{ item.description }}">
+                                        {{ item.description if item.description else '—' }}
+                                    </td>
+                                    <td class="py-2.5 px-3 text-right font-bold text-slate-900 whitespace-nowrap">
+                                        ₱{{ "{:,.2f}".format(item.amount) }}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr id="empty-today-row">
+                                    <td colspan="3" class="py-8 text-center text-slate-400 text-xs">
+                                        <div class="flex flex-col items-center justify-center gap-1">
+                                            <i data-lucide="receipt" class="w-6 h-6 text-slate-300"></i>
+                                            <p class="font-medium text-slate-500">No expenses logged today yet</p>
+                                            <p class="text-[11px] text-slate-400">Transactions you log will appear here instantly.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+    function selectCat(catName) {
+        const select = document.getElementById('category-select');
+        if (select) {
+            select.value = catName;
+            const amtInput = document.getElementById('amount-input');
+            if (amtInput) { amtInput.focus(); }
+        }
+    }
+
+    function showToast(msg, type = 'success') {
+        const toast = document.getElementById('rapid-toast');
+        const toastText = document.getElementById('rapid-toast-text');
+        if (!toast || !toastText) return;
+
+        toastText.textContent = msg;
+        if (type === 'success') {
+            toast.className = 'p-3.5 rounded-2xl text-xs font-bold border transition-all duration-300 flex items-center justify-between shadow-sm bg-emerald-50 border-emerald-200 text-emerald-800';
+        } else {
+            toast.className = 'p-3.5 rounded-2xl text-xs font-bold border transition-all duration-300 flex items-center justify-between shadow-sm bg-rose-50 border-rose-200 text-rose-800';
+        }
+        toast.classList.remove('hidden');
+
+        setTimeout(() => {
+            toast.classList.add('hidden');
+        }, 4000);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // Auto default date picker to today
+        const dateInput = document.getElementById('expense_date');
+        if (dateInput && !dateInput.value) {
+            dateInput.value = new Date().toISOString().split('T')[0];
+        }
+
+        const form = document.getElementById('rapidExpenseForm');
+        const amountInput = document.getElementById('amount-input');
+        const descInput = document.getElementById('desc-input');
+        const catSelect = document.getElementById('category-select');
+        const submitBtn = document.getElementById('log-submit-btn');
+        const todayBody = document.getElementById('today-expenses-body');
+        const todayCountBadge = document.getElementById('today-count-badge');
+
+        let todayCount = {{ today_expenses|length }};
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const category = catSelect.value;
+            const amount = amountInput.value.trim();
+            const description = descInput.value.trim();
+            const expenseDate = dateInput.value;
+
+            if (!category || !amount || !expenseDate) {
+                showToast('Please fill in category, amount, and date.', 'error');
+                return;
+            }
+
+            // Button loading indicator
+            const originalBtnHTML = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>Saving...</span>';
+            if (window.lucide) { lucide.createIcons(); }
+
+            try {
+                const response = await fetch("{{ url_for('add_expense') }}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        category: category,
+                        amount: amount,
+                        description: description,
+                        expense_date: expenseDate
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // 1. Clear Amount & Description, KEEP Category & Date active
+                    amountInput.value = '';
+                    descInput.value = '';
+                    amountInput.focus();
+
+                    // 2. Prepend to Mini Daily History Table
+                    const emptyRow = document.getElementById('empty-today-row');
+                    if (emptyRow) {
+                        emptyRow.remove();
+                    }
+
+                    const formattedAmt = Number(data.expense.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    const newRow = document.createElement('tr');
+                    newRow.className = 'hover:bg-slate-50/80 transition-colors bg-emerald-50/50 animate-in fade-in duration-300';
+                    newRow.innerHTML = `
+                        <td class="py-2.5 px-3 font-semibold text-slate-800 whitespace-nowrap">
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] bg-slate-100 text-slate-700 font-medium">
+                                ${data.expense.category}
+                            </span>
+                        </td>
+                        <td class="py-2.5 px-3 text-slate-500 truncate max-w-[120px]" title="${data.expense.description || ''}">
+                            ${data.expense.description ? data.expense.description : '—'}
+                        </td>
+                        <td class="py-2.5 px-3 text-right font-bold text-slate-900 whitespace-nowrap">
+                            ₱${formattedAmt}
+                        </td>
+                    `;
+                    todayBody.insertBefore(newRow, todayBody.firstChild);
+
+                    todayCount += 1;
+                    if (todayCountBadge) {
+                        todayCountBadge.textContent = `${todayCount} item${todayCount === 1 ? '' : 's'}`;
+                    }
+
+                    showToast('Transaction logged successfully!', 'success');
+                } else {
+                    showToast(data.error || 'Failed to save expense.', 'error');
+                }
+            } catch (err) {
+                showToast('Network error while saving expense.', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnHTML;
+                if (window.lucide) { lucide.createIcons(); }
+            }
+        });
+    });
+</script>
+{% endblock %}

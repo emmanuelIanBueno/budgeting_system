@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-[#0B1325]">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Portal Login — FYP Budget Management</title>
+    
+    <!-- Google Fonts: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    </style>
+</head>
+<body class="h-full flex items-center justify-center p-4 bg-[#0B1325] text-slate-100">
+    <div class="max-w-md w-full space-y-6">
+
+        <!-- Brand / Header -->
+        <div class="text-center space-y-2">
+            <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-teal-500/10 border border-teal-500/30 text-teal-400 mb-1 shadow-lg shadow-teal-500/10">
+                <i data-lucide="shield" class="w-7 h-7"></i>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-white">
+                Admin Control Portal
+            </h1>
+            <p class="text-xs sm:text-sm text-slate-400 font-medium">
+                Authorized administrators only. Role-Based Access Control enforced.
+            </p>
+        </div>
+
+        <!-- Login Card -->
+        <div class="bg-[#11192E] rounded-3xl p-7 sm:p-8 border border-slate-800 shadow-2xl space-y-5">
+            
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="space-y-2">
+                        {% for category, message in messages %}
+                            <div class="p-3.5 rounded-2xl text-xs font-bold border flex items-center gap-2.5 {% if category == 'error' %}bg-rose-500/10 border-rose-500/30 text-rose-400{% else %}bg-emerald-500/10 border-emerald-500/30 text-emerald-400{% endif %}">
+                                <i data-lucide="{% if category == 'error' %}alert-circle{% else %}check-circle-2{% endif %}" class="w-4 h-4 shrink-0"></i>
+                                <span>{{ message }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" action="{{ url_for('admin_login') }}" class="space-y-4">
+                
+                <!-- Admin Username or Email -->
+                <div>
+                    <label for="username" class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+                        Admin Identifier
+                    </label>
+                    <div class="relative rounded-2xl">
+                        <span class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-500">
+                            <i data-lucide="user-check" class="w-4 h-4"></i>
+                        </span>
+                        <input type="text" id="username" name="username" required autofocus placeholder="Username or admin email" class="block w-full pl-11 pr-4 py-3 text-sm font-semibold bg-[#0B1325] border border-slate-700/80 rounded-2xl text-white placeholder-slate-500 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition">
+                    </div>
+                </div>
+
+                <!-- Admin Password -->
+                <div>
+                    <label for="password" class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+                        Secret Key / Password
+                    </label>
+                    <div class="relative rounded-2xl">
+                        <span class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-500">
+                            <i data-lucide="lock" class="w-4 h-4"></i>
+                        </span>
+                        <input type="password" id="password" name="password" required placeholder="••••••••" class="block w-full pl-11 pr-11 py-3 text-sm font-semibold bg-[#0B1325] border border-slate-700/80 rounded-2xl text-white placeholder-slate-500 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition">
+                        <button type="button" onclick="togglePassVisibility()" class="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-500 hover:text-slate-300 cursor-pointer">
+                            <i id="eyeIcon" data-lucide="eye" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="w-full py-3.5 px-6 rounded-2xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-black text-sm shadow-lg shadow-teal-500/20 transition-all flex items-center justify-center gap-2 hover:-translate-y-0.5 cursor-pointer mt-2">
+                    <i data-lucide="log-in" class="w-4 h-4"></i>
+                    <span>Authenticate as Admin</span>
+                </button>
+            </form>
+
+            <div class="border-t border-slate-800 pt-4 text-center">
+                <a href="{{ url_for('login') }}" class="text-xs font-semibold text-slate-400 hover:text-teal-300 transition-colors inline-flex items-center gap-1.5">
+                    <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+                    <span>Return to User Client Portal</span>
+                </a>
+            </div>
+        </div>
+
+        <p class="text-center text-[11px] text-slate-500 font-medium">
+            FYP Budget Management — Administrative Access Security Layer
+        </p>
+    </div>
+
+    <script>
+        function togglePassVisibility() {
+            const input = document.getElementById('password');
+            const icon = document.getElementById('eyeIcon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.setAttribute('data-lucide', 'eye-off');
+            } else {
+                input.type = 'password';
+                icon.setAttribute('data-lucide', 'eye');
+            }
+            if (window.lucide) { lucide.createIcons(); }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.lucide) { lucide.createIcons(); }
+        });
+    </script>
+</body>
+</html>
+
