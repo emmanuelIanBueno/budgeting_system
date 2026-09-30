@@ -84,7 +84,10 @@
                         <span class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
                             <i data-lucide="lock" class="w-4 h-4"></i>
                         </span>
-                        <input type="password" name="password" required placeholder="••••••••" class="block w-full pl-11 pr-4 py-3 text-sm font-medium border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                        <input type="password" id="loginPassword" name="password" required placeholder="••••••••" class="block w-full pl-11 pr-11 py-3 text-sm font-medium border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                        <button type="button" onclick="togglePassword('loginPassword', this)" class="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none cursor-pointer" aria-label="Toggle password visibility">
+                            <i data-lucide="eye" class="w-4 h-4 pointer-events-none"></i>
+                        </button>
                     </div>
                 </div>
 
@@ -111,6 +114,15 @@
     </div>
 
     <script>
+        function togglePassword(inputId, btn) {
+            const input = document.getElementById(inputId);
+            if (!input || !btn) return;
+            const isPassword = input.type === 'password';
+            input.type = isPassword ? 'text' : 'password';
+            btn.innerHTML = `<i data-lucide="${isPassword ? 'eye-off' : 'eye'}" class="w-4 h-4 pointer-events-none"></i>`;
+            if (window.lucide) lucide.createIcons();
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             if (window.lucide) lucide.createIcons();
         });

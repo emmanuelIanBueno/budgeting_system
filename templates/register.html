@@ -95,7 +95,24 @@
                         <span class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
                             <i data-lucide="lock" class="w-4 h-4"></i>
                         </span>
-                        <input type="password" name="password" required placeholder="Create a strong password" class="block w-full pl-11 pr-4 py-2.5 text-sm font-medium border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                        <input type="password" id="regPassword" name="password" required placeholder="Create a strong password" class="block w-full pl-11 pr-11 py-2.5 text-sm font-medium border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                        <button type="button" onclick="togglePassword('regPassword', this)" class="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none cursor-pointer" aria-label="Toggle password visibility">
+                            <i data-lucide="eye" class="w-4 h-4 pointer-events-none"></i>
+                        </button>
+                    </div>
+
+                    <!-- Password Strength Meter -->
+                    <div id="strengthContainer" class="mt-2 hidden">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="text-[11px] font-semibold text-slate-500">Password Strength</span>
+                            <span id="strengthText" class="text-[11px] font-bold text-slate-500">Weak</span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-1.5 h-1.5 w-full">
+                            <div id="bar1" class="h-full rounded-full bg-slate-200 transition-all duration-300"></div>
+                            <div id="bar2" class="h-full rounded-full bg-slate-200 transition-all duration-300"></div>
+                            <div id="bar3" class="h-full rounded-full bg-slate-200 transition-all duration-300"></div>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-1">Must be at least 6 characters. Use letters, numbers & symbols for best strength.</p>
                     </div>
                 </div>
 
@@ -106,7 +123,10 @@
                         <span class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
                             <i data-lucide="shield-check" class="w-4 h-4"></i>
                         </span>
-                        <input type="password" name="confirm_password" required placeholder="Repeat your password" class="block w-full pl-11 pr-4 py-2.5 text-sm font-medium border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                        <input type="password" id="regConfirmPassword" name="confirm_password" required placeholder="Repeat your password" class="block w-full pl-11 pr-11 py-2.5 text-sm font-medium border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                        <button type="button" onclick="togglePassword('regConfirmPassword', this)" class="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none cursor-pointer" aria-label="Toggle confirm password visibility">
+                            <i data-lucide="eye" class="w-4 h-4 pointer-events-none"></i>
+                        </button>
                     </div>
                 </div>
 
@@ -132,8 +152,73 @@
     </div>
 
     <script>
+        function togglePassword(inputId, btn) {
+            const input = document.getElementById(inputId);
+            if (!input || !btn) return;
+            const isPassword = input.type === 'password';
+            input.type = isPassword ? 'text' : 'password';
+            btn.innerHTML = `<i data-lucide="${isPassword ? 'eye-off' : 'eye'}" class="w-4 h-4 pointer-events-none"></i>`;
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function checkPasswordStrength(password) {
+            if (!password || password.length === 0) return 0;
+            let score = 0;
+            if (password.length >= 8) score++;
+            if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score++;
+            if (/\d/.test(password)) score++;
+            if (/[^A-Za-z0-9]/.test(password)) score++;
+
+            if (password.length < 6 || score <= 1) return 1; // Weak
+            if (score >= 2 && score < 4) return 2;          // Medium
+            return 3;                                       // Strong
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             if (window.lucide) lucide.createIcons();
+
+            const passwordInput = document.getElementById('regPassword');
+            const strengthContainer = document.getElementById('strengthContainer');
+            const strengthText = document.getElementById('strengthText');
+            const bar1 = document.getElementById('bar1');
+            const bar2 = document.getElementById('bar2');
+            const bar3 = document.getElementById('bar3');
+
+            if (passwordInput && strengthContainer) {
+                passwordInput.addEventListener('input', () => {
+                    const val = passwordInput.value;
+                    if (!val) {
+                        strengthContainer.classList.add('hidden');
+                        return;
+                    }
+                    strengthContainer.classList.remove('hidden');
+                    const strength = checkPasswordStrength(val);
+
+                    bar1.className = 'h-full rounded-full transition-all duration-300';
+                    bar2.className = 'h-full rounded-full transition-all duration-300';
+                    bar3.className = 'h-full rounded-full transition-all duration-300';
+
+                    if (strength === 1) {
+                        bar1.classList.add('bg-rose-500');
+                        bar2.classList.add('bg-slate-200');
+                        bar3.classList.add('bg-slate-200');
+                        strengthText.textContent = 'Weak';
+                        strengthText.className = 'text-[11px] font-bold text-rose-500';
+                    } else if (strength === 2) {
+                        bar1.classList.add('bg-amber-500');
+                        bar2.classList.add('bg-amber-500');
+                        bar3.classList.add('bg-slate-200');
+                        strengthText.textContent = 'Medium';
+                        strengthText.className = 'text-[11px] font-bold text-amber-500';
+                    } else if (strength === 3) {
+                        bar1.classList.add('bg-emerald-500');
+                        bar2.classList.add('bg-emerald-500');
+                        bar3.classList.add('bg-emerald-500');
+                        strengthText.textContent = 'Strong';
+                        strengthText.className = 'text-[11px] font-bold text-emerald-500';
+                    }
+                });
+            }
         });
     </script>
 </body>

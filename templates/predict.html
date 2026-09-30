@@ -138,11 +138,11 @@
             <!-- Prediction Output Card -->
             <div class="rounded-3xl p-6 sm:p-7 border shadow-md transition-all {% if risk_level == 'HIGH' %}bg-rose-50/90 border-rose-200 text-rose-950{% elif risk_level == 'MEDIUM' %}bg-amber-50/90 border-amber-200 text-amber-950{% else %}bg-emerald-50/90 border-emerald-200 text-emerald-950{% endif %}">
                 
-                <div class="flex items-center justify-between mb-4">
-                    <span class="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full {% if risk_level == 'HIGH' %}bg-rose-100 text-rose-700 border border-rose-200{% elif risk_level == 'MEDIUM' %}bg-amber-100 text-amber-700 border border-amber-200{% else %}bg-emerald-100 text-emerald-700 border border-emerald-200{% endif %}">
+                <div class="flex items-center justify-between gap-2 mb-4">
+                    <span class="inline-flex items-center justify-center text-center text-xs font-bold uppercase tracking-wider px-3.5 py-1.5 rounded-full {% if risk_level == 'HIGH' %}bg-rose-100 text-rose-700 border border-rose-200{% elif risk_level == 'MEDIUM' %}bg-amber-100 text-amber-700 border border-amber-200{% else %}bg-emerald-100 text-emerald-700 border border-emerald-200{% endif %}">
                         {{ risk_level }} Risk Level
                     </span>
-                    <div class="flex items-center gap-1.5 text-xs font-semibold opacity-80">
+                    <div class="flex items-center gap-1.5 text-xs font-semibold opacity-80 shrink-0">
                         <i data-lucide="check-check" class="w-4 h-4"></i>
                         <span>{{ "%.1f"|format(confidence) }}% confidence</span>
                     </div>
@@ -161,17 +161,6 @@
                     <div>
                         <p class="text-xs font-bold opacity-75">Forecast Outcome</p>
                         <h4 class="text-2xl font-black tracking-tight">{{ prediction }}</h4>
-                    </div>
-                </div>
-
-                <!-- Confidence Progress Bar -->
-                <div class="space-y-1.5 mt-4">
-                    <div class="flex justify-between text-xs font-semibold">
-                        <span>Model Certainty</span>
-                        <span>{{ "%.1f"|format(confidence) }}%</span>
-                    </div>
-                    <div class="w-full bg-white/70 rounded-full h-2.5 overflow-hidden">
-                        <div class="h-2.5 rounded-full {% if risk_level == 'HIGH' %}bg-rose-600{% elif risk_level == 'MEDIUM' %}bg-amber-500{% else %}bg-emerald-600{% endif %}" style="width: {{ confidence }}%;"></div>
                     </div>
                 </div>
 

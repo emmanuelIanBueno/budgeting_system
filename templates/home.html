@@ -15,6 +15,101 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
+
+        /* Mobile Responsiveness (<= 768px) */
+        @media (max-width: 768px) {
+            /* Navbar: Stack above action buttons & center items */
+            header {
+                flex-direction: column !important;
+                align-items: center !important;
+                justify-content: center !important;
+                gap: 1.25rem !important;
+                padding: 1.25rem 1rem !important;
+                text-align: center !important;
+            }
+
+            header > a {
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                text-align: left !important;
+                margin: 0 auto !important;
+            }
+
+            .nav-actions {
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                gap: 0.75rem !important;
+                width: 100% !important;
+                max-width: 300px !important;
+                margin: 0 auto !important;
+            }
+
+            .nav-actions a {
+                flex: 1 1 0% !important;
+                display: inline-flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                text-align: center !important;
+                white-space: nowrap !important;
+            }
+
+            /* Hero Section: Center text, badges, headings, and buttons */
+            main {
+                text-align: center !important;
+                padding-top: 2rem !important;
+                padding-bottom: 3.5rem !important;
+                padding-left: 1.25rem !important;
+                padding-right: 1.25rem !important;
+                margin: 0 auto !important;
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                justify-content: center !important;
+            }
+
+            .hero-badge {
+                display: inline-flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                text-align: center !important;
+                margin: 0 auto 1.5rem auto !important;
+            }
+
+            h1 {
+                text-align: center !important;
+                margin-left: auto !important;
+                margin-right: auto !important;
+                font-size: 2.25rem !important;
+                line-height: 1.15 !important;
+            }
+
+            p {
+                text-align: center !important;
+                margin-left: auto !important;
+                margin-right: auto !important;
+            }
+
+            .hero-actions {
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                justify-content: center !important;
+                width: 100% !important;
+                max-width: 320px !important;
+                margin: 2rem auto 0 auto !important;
+                gap: 0.875rem !important;
+            }
+
+            .hero-actions a {
+                width: 100% !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                text-align: center !important;
+            }
+        }
     </style>
 </head>
 <body class="min-h-full bg-[#0B1325] text-slate-100 flex flex-col justify-between relative overflow-x-hidden">
@@ -24,9 +119,9 @@
     <div class="absolute top-80 right-0 w-[450px] h-[450px] bg-teal-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
     <!-- Top Navigation Header -->
-    <header class="w-full max-w-7xl mx-auto px-6 sm:px-10 py-6 flex items-center justify-between relative z-20">
-        <a href="{{ url_for('home') }}" class="flex items-center gap-3 group">
-            <div class="w-11 h-11 rounded-2xl bg-teal-500/20 border border-teal-500/40 flex items-center justify-center text-teal-400 group-hover:scale-105 transition-transform shadow-xl shadow-teal-500/10">
+    <header class="w-full max-w-7xl mx-auto px-6 sm:px-10 py-6 flex flex-col sm:flex-row items-center justify-between gap-4 relative z-20">
+        <a href="{{ url_for('home') }}" class="flex items-center gap-3 group text-center sm:text-left">
+            <div class="w-11 h-11 rounded-2xl bg-teal-500/20 border border-teal-500/40 flex items-center justify-center text-teal-400 group-hover:scale-105 transition-transform shadow-xl shadow-teal-500/10 shrink-0">
                 <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h3v3a1 1 0 0 1-1 1H5a2 2 0 0 1-2-2V6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     <rect x="16" y="11" width="6" height="6" rx="2" fill="#2dd4bf" stroke="#14b8a6" stroke-width="1.5"/>
@@ -34,18 +129,18 @@
                 </svg>
             </div>
             <div>
-                <div class="font-extrabold text-xl tracking-tight text-white flex items-center gap-1.5">
+                <div class="font-extrabold text-lg sm:text-xl tracking-tight text-white flex items-center justify-center sm:justify-start gap-1.5">
                     FYP <span class="text-teal-400">Budget Management</span>
                 </div>
                 <p class="text-[10px] text-slate-400 font-medium">Plan Today. Secure Tomorrow.</p>
             </div>
         </a>
 
-        <div class="flex items-center gap-3">
-            <a href="{{ url_for('login') }}" class="px-5 py-2.5 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition">
+        <div class="nav-actions flex items-center justify-center gap-3 w-full sm:w-auto">
+            <a href="{{ url_for('login') }}" class="flex-1 sm:flex-none flex items-center justify-center text-center px-5 py-2.5 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition whitespace-nowrap">
                 Sign In
             </a>
-            <a href="{{ url_for('register') }}" class="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-600/30 transition hover:-translate-y-0.5">
+            <a href="{{ url_for('register') }}" class="flex-1 sm:flex-none flex items-center justify-center text-center px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-600/30 transition hover:-translate-y-0.5 whitespace-nowrap">
                 Get Started
             </a>
         </div>
@@ -55,29 +150,29 @@
     <main class="w-full max-w-5xl mx-auto px-6 sm:px-10 py-20 sm:py-32 text-center relative z-10 flex flex-col items-center">
         
         <!-- Tagline badge -->
-        <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-teal-500/10 border border-teal-500/30 text-teal-300 text-xs font-bold mb-6">
+        <div class="hero-badge inline-flex items-center justify-center gap-2 px-4 py-1.5 rounded-full bg-teal-500/10 border border-teal-500/30 text-teal-300 text-xs font-bold mb-6 mx-auto">
             <i data-lucide="sparkles" class="w-4 h-4"></i>
             <span>Machine Learning Powered Budget Management</span>
         </div>
 
-        <h1 class="text-4xl sm:text-6xl font-black tracking-tight text-white max-w-3xl leading-tight sm:leading-none">
+        <h1 class="text-4xl sm:text-6xl font-black tracking-tight text-white max-w-3xl leading-tight sm:leading-none text-center mx-auto">
             Plan Today. <br class="hidden sm:inline" />
             <span class="bg-gradient-to-r from-blue-400 via-teal-300 to-emerald-400 bg-clip-text text-transparent">
                 Secure Tomorrow.
             </span>
         </h1>
 
-        <p class="mt-6 text-base sm:text-lg text-slate-300 max-w-2xl font-medium leading-relaxed">
+        <p class="mt-6 text-base sm:text-lg text-slate-300 max-w-2xl font-medium leading-relaxed text-center mx-auto">
             Take full control of your finances with automated category tracking, live visual analytics, and AI models that forecast overspending risks before month's end.
         </p>
 
         <!-- CTA Action Buttons -->
-        <div class="mt-10 flex flex-col sm:flex-row items-center gap-4">
-            <a href="{{ url_for('register') }}" class="w-full sm:w-auto px-8 py-4 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-sm shadow-xl shadow-blue-600/30 transition-all hover:-translate-y-0.5 flex items-center justify-center gap-2">
+        <div class="hero-actions mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto mx-auto">
+            <a href="{{ url_for('register') }}" class="w-full sm:w-auto px-8 py-4 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-sm shadow-xl shadow-blue-600/30 transition-all hover:-translate-y-0.5 flex items-center justify-center text-center gap-2">
                 <span>Start Budgeting Now</span>
                 <i data-lucide="arrow-right" class="w-4 h-4"></i>
             </a>
-            <a href="{{ url_for('login') }}" class="w-full sm:w-auto px-8 py-4 rounded-2xl bg-slate-800/80 hover:bg-slate-800 text-slate-200 border border-slate-700 font-bold text-sm transition-all">
+            <a href="{{ url_for('login') }}" class="w-full sm:w-auto px-8 py-4 rounded-2xl bg-slate-800/80 hover:bg-slate-800 text-slate-200 border border-slate-700 font-bold text-sm transition-all flex items-center justify-center text-center">
                 Existing User? Sign In
             </a>
         </div>
