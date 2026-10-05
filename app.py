@@ -405,25 +405,65 @@ def add_budget():
         
         try:
             connection = get_db_connection()
-            cursor = connection.cursor()
+            cursor = connection.cursor(dictionary=True)
             
+            # Check if budget already exists for this specific month
             cursor.execute(
-                "INSERT INTO budgets (user_id, monthly_income, budget_limit, month_year) VALUES (%s, %s, %s, %s)",
-                (session['user_id'], monthly_income, budget_limit, month_year)
+                "SELECT id FROM budgets WHERE user_id = %s AND month_year = %s ORDER BY id DESC LIMIT 1",
+                (session['user_id'], month_year)
             )
+            existing_budget = cursor.fetchone()
+
+            if existing_budget:
+                cursor.execute(
+                    "UPDATE budgets SET monthly_income = %s, budget_limit = %s WHERE id = %s",
+                    (monthly_income, budget_limit, existing_budget['id'])
+                )
+            else:
+                cursor.execute(
+                    "INSERT INTO budgets (user_id, monthly_income, budget_limit, month_year) VALUES (%s, %s, %s, %s)",
+                    (session['user_id'], monthly_income, budget_limit, month_year)
+                )
             
             connection.commit()
             cursor.close()
             connection.close()
             
             flash('Budget saved successfully!', 'success')
-            return redirect(url_for('dashboard'))
+            return redirect(url_for('dashboard', month=month_year))
             
-        except mysql.connector.Error as error:
+        except Exception as error:
             flash(f'Error: {error}', 'error')
             return redirect(url_for('add_budget'))
-    
-    return render_template('add_budget.html', username=session.get('username', 'User'))
+
+    # Load all user budgets by month so changing target month dynamically populates expected income
+    budgets_by_month = {}
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute(
+            "SELECT month_year, monthly_income, budget_limit FROM budgets WHERE user_id = %s ORDER BY id ASC",
+            (session['user_id'],)
+        )
+        rows = cursor.fetchall()
+        cursor.close()
+        connection.close()
+        for r in rows:
+            if r.get('month_year'):
+                budgets_by_month[r['month_year']] = {
+                    'monthly_income': float(r['monthly_income']),
+                    'budget_limit': float(r['budget_limit'])
+                }
+    except Exception as e:
+        print(f"Notice: Could not load user budgets ({e})")
+
+    default_month = request.args.get('month', datetime.now().strftime('%Y-%m'))
+    return render_template(
+        'add_budget.html',
+        username=session.get('username', 'User'),
+        budgets_by_month=budgets_by_month,
+        default_month=default_month
+    )
 
 # Add expense (with Rapid Log support)
 @app.route('/add_expense', methods=['GET', 'POST'])

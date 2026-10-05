@@ -59,7 +59,7 @@
                         <span class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
                             <i data-lucide="calendar" class="w-4 h-4"></i>
                         </span>
-                        <input type="month" name="month_year" required class="block w-full pl-11 pr-4 py-3 text-sm font-semibold border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                        <input type="month" id="month_year" name="month_year" value="{{ default_month }}" required class="block w-full pl-11 pr-4 py-3 text-sm font-semibold border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" onchange="loadBudgetForMonth(this.value)" oninput="loadBudgetForMonth(this.value)">
                     </div>
                 </div>
 
@@ -118,6 +118,22 @@
 </div>
 
 <script>
+    const budgetsByMonth = {{ budgets_by_month | tojson if budgets_by_month is defined else '{}' }};
+
+    function loadBudgetForMonth(monthVal) {
+        const incomeInput = document.getElementById('monthly_income');
+        const limitInput = document.getElementById('budget_limit');
+
+        if (budgetsByMonth && budgetsByMonth[monthVal]) {
+            incomeInput.value = budgetsByMonth[monthVal].monthly_income;
+            limitInput.value = budgetsByMonth[monthVal].budget_limit;
+        } else {
+            incomeInput.value = '';
+            limitInput.value = '';
+        }
+        updateBudgetPreview();
+    }
+
     function updateBudgetPreview() {
         const income = parseFloat(document.getElementById('monthly_income').value) || 0;
         const limit = parseFloat(document.getElementById('budget_limit').value) || 0;
@@ -128,13 +144,15 @@
         document.getElementById('preview-savings').innerText = '₱ ' + savings.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
-    // Auto-set current month in month picker
+    // Initialize on page load
     document.addEventListener('DOMContentLoaded', () => {
-        const monthInput = document.querySelector('input[type="month"]');
-        if (monthInput && !monthInput.value) {
-            const now = new Date();
-            const ym = now.toISOString().slice(0, 7);
-            monthInput.value = ym;
+        const monthInput = document.getElementById('month_year');
+        if (monthInput) {
+            if (!monthInput.value) {
+                const now = new Date();
+                monthInput.value = now.toISOString().slice(0, 7);
+            }
+            loadBudgetForMonth(monthInput.value);
         }
     });
 </script>

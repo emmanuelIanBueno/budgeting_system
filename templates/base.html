@@ -107,7 +107,7 @@
                 </a>
 
                 <!-- Budget -->
-                <a href="{{ url_for('add_budget') }}" class="flex items-center gap-3.5 px-4 py-3 rounded-xl font-medium text-sm transition-all {% if request.endpoint == 'add_budget' %}bg-blue-600 text-white shadow-lg shadow-blue-600/30{% else %}text-slate-400 hover:text-white hover:bg-slate-800/60{% endif %}">
+                <a href="{{ url_for('add_budget', month=selected_month_str) if selected_month_str else url_for('add_budget') }}" class="flex items-center gap-3.5 px-4 py-3 rounded-xl font-medium text-sm transition-all {% if request.endpoint == 'add_budget' %}bg-blue-600 text-white shadow-lg shadow-blue-600/30{% else %}text-slate-400 hover:text-white hover:bg-slate-800/60{% endif %}">
                     <i data-lucide="wallet" class="w-5 h-5 {% if request.endpoint == 'add_budget' %}text-white{% else %}text-slate-400{% endif %}"></i>
                     <span>Budget</span>
                 </a>
