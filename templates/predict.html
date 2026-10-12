@@ -10,11 +10,11 @@
         <div class="relative z-10 max-w-2xl">
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/20 text-teal-300 text-xs font-bold border border-teal-500/30 mb-3">
                 <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
-                <span>Machine Learning Powered Model</span>
+                <span>Machine Learning Forecast Engine</span>
             </div>
             <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Overspending Risk Predictor</h2>
             <p class="text-slate-300 text-sm sm:text-base mt-2 leading-relaxed">
-                Enter your monthly budget and current spending to simulate whether your spending trajectory will exceed your budget before month's end.
+                Automatically evaluates overspending risk for your target month by analyzing your historical transaction velocity across core spending categories.
             </p>
         </div>
         <!-- Decorative background glow -->
@@ -24,114 +24,243 @@
     <!-- Main Content: Form & Prediction Result -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-        <!-- Form Card (7 cols) -->
-        <div class="lg:col-span-7 bg-white rounded-2xl p-6 sm:p-8 border border-slate-100 shadow-sm">
-            <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2.5 mb-6">
-                <i data-lucide="sliders" class="w-5 h-5 text-blue-600"></i>
-                <span>Budget & Expense Parameters</span>
-            </h3>
+        <!-- Left Column: Mode Selector & Inputs (7 cols) -->
+        <div class="lg:col-span-7 bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-sm space-y-6">
+            
+            <!-- Mode Switcher Tabs -->
+            <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                <div>
+                    <h3 class="text-base font-bold text-slate-900">Forecast Configuration</h3>
+                    <p class="text-xs text-slate-400">Choose between historical analysis and manual scenario testing</p>
+                </div>
+                <div class="flex items-center p-1 bg-slate-100 rounded-2xl gap-1">
+                    <button type="button" id="tab-btn-auto" onclick="switchPredictMode('auto')" class="px-3.5 py-1.5 text-xs font-bold rounded-xl transition {% if active_mode == 'auto' %}bg-blue-600 text-white shadow-sm{% else %}text-slate-600 hover:text-slate-900{% endif %}">
+                        Auto-Forecast
+                    </button>
+                    <button type="button" id="tab-btn-manual" onclick="switchPredictMode('manual')" class="px-3.5 py-1.5 text-xs font-bold rounded-xl transition {% if active_mode == 'manual' %}bg-blue-600 text-white shadow-sm{% else %}text-slate-600 hover:text-slate-900{% endif %}">
+                        Manual Simulation
+                    </button>
+                </div>
+            </div>
 
-            <form method="POST" action="{{ url_for('predict') }}" class="space-y-6">
+            <!-- Panel 1: Auto-Forecast (Historical Baseline) -->
+            <div id="panel-auto" class="space-y-5 {% if active_mode != 'auto' %}hidden{% endif %}">
                 
-                <!-- Section 1: Core Financials -->
-                <div>
-                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Core Budget Info</h4>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <!-- Target Month Picker Form -->
+                <form method="GET" action="{{ url_for('predict') }}" class="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
+                            <i data-lucide="calendar-check" class="w-4 h-4"></i>
+                        </div>
                         <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1.5">Monthly Income</label>
-                            <div class="relative rounded-xl shadow-sm">
-                                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 font-bold text-sm">₱</span>
-                                <input type="number" name="income" step="0.01" min="0" required placeholder="35000" class="block w-full pl-8 pr-4 py-2.5 text-sm font-medium border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
-                            </div>
+                            <p class="text-xs font-bold text-slate-800">Target Month to Forecast</p>
+                            <p class="text-[11px] text-slate-400">Evaluating trajectory for {{ target_month_name }}</p>
                         </div>
+                    </div>
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <input type="month" name="target_month" value="{{ target_month }}" onchange="this.form.submit()" class="px-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-300 bg-white shadow-sm focus:ring-2 focus:ring-blue-500 outline-none w-full sm:w-auto">
+                    </div>
+                </form>
 
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1.5">Budget Limit</label>
-                            <div class="relative rounded-xl shadow-sm">
-                                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 font-bold text-sm">₱</span>
-                                <input type="number" name="budget_limit" step="0.01" min="0" required placeholder="30000" class="block w-full pl-8 pr-4 py-2.5 text-sm font-medium border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
-                            </div>
-                        </div>
-
-                        <div class="sm:col-span-2">
-                            <label class="block text-xs font-semibold text-slate-700 mb-1.5">Days Passed in the Month (1–31)</label>
-                            <div class="relative rounded-xl shadow-sm">
-                                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                                    <i data-lucide="calendar" class="w-4 h-4"></i>
-                                </span>
-                                <input type="number" name="days_passed" min="1" max="31" required placeholder="15" class="block w-full pl-10 pr-4 py-2.5 text-sm font-medium border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
-                            </div>
-                        </div>
+                {% if has_history %}
+                <!-- History Status Banner -->
+                <div class="p-4 rounded-2xl bg-teal-50/70 border border-teal-200/80 text-teal-950 flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-xl bg-teal-500/20 text-teal-700 flex items-center justify-center shrink-0 mt-0.5">
+                        <i data-lucide="history" class="w-4 h-4"></i>
+                    </div>
+                    <div class="text-xs">
+                        <p class="font-extrabold text-teal-900">Analyzed {{ history.months_count }} Historical Month{% if history.months_count > 1 %}s{% endif %}:</p>
+                        <p class="font-semibold text-teal-700 mt-0.5">
+                            {{ history.months_labels|join(', ') }}
+                        </p>
+                        <p class="text-[11px] text-teal-600/90 mt-1">
+                            Your category run-rates below represent your real monthly average expenditures.
+                        </p>
                     </div>
                 </div>
 
-                <div class="border-t border-slate-100 my-4"></div>
-
-                <!-- Section 2: Expense Breakdown -->
-                <div>
-                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Category Spending So Far</h4>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center gap-1.5">
+                <!-- Aggregated Category Run-Rates -->
+                <div class="space-y-3">
+                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Historical Monthly Run-Rates</h4>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                        <div class="p-3 rounded-xl border border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                            <span class="font-semibold text-slate-600 flex items-center gap-1.5">
                                 <span>🍔 Food & Dining</span>
-                            </label>
-                            <div class="relative rounded-xl shadow-sm">
-                                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 font-bold text-sm">₱</span>
-                                <input type="number" name="food_spent" step="0.01" min="0" required placeholder="4500" class="block w-full pl-8 pr-4 py-2.5 text-sm font-medium border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
-                            </div>
+                            </span>
+                            <span class="font-extrabold text-slate-900">₱ {{ "{:,.2f}".format(history.categories.food) }}</span>
                         </div>
-
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center gap-1.5">
+                        <div class="p-3 rounded-xl border border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                            <span class="font-semibold text-slate-600 flex items-center gap-1.5">
                                 <span>🚗 Transportation</span>
-                            </label>
-                            <div class="relative rounded-xl shadow-sm">
-                                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 font-bold text-sm">₱</span>
-                                <input type="number" name="transport_spent" step="0.01" min="0" required placeholder="2500" class="block w-full pl-8 pr-4 py-2.5 text-sm font-medium border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
-                            </div>
+                            </span>
+                            <span class="font-extrabold text-slate-900">₱ {{ "{:,.2f}".format(history.categories.transport) }}</span>
                         </div>
-
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center gap-1.5">
+                        <div class="p-3 rounded-xl border border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                            <span class="font-semibold text-slate-600 flex items-center gap-1.5">
                                 <span>💡 Utilities & Bills</span>
-                            </label>
-                            <div class="relative rounded-xl shadow-sm">
-                                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 font-bold text-sm">₱</span>
-                                <input type="number" name="utilities_spent" step="0.01" min="0" required placeholder="1800" class="block w-full pl-8 pr-4 py-2.5 text-sm font-medium border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
-                            </div>
+                            </span>
+                            <span class="font-extrabold text-slate-900">₱ {{ "{:,.2f}".format(history.categories.utilities) }}</span>
                         </div>
-
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center gap-1.5">
+                        <div class="p-3 rounded-xl border border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                            <span class="font-semibold text-slate-600 flex items-center gap-1.5">
                                 <span>🎮 Entertainment & Leisure</span>
-                            </label>
-                            <div class="relative rounded-xl shadow-sm">
-                                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 font-bold text-sm">₱</span>
-                                <input type="number" name="entertainment_spent" step="0.01" min="0" required placeholder="2000" class="block w-full pl-8 pr-4 py-2.5 text-sm font-medium border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
-                            </div>
+                            </span>
+                            <span class="font-extrabold text-slate-900">₱ {{ "{:,.2f}".format(history.categories.entertainment) }}</span>
                         </div>
-
-                        <div class="sm:col-span-2">
-                            <label class="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center gap-1.5">
+                        <div class="sm:col-span-2 p-3 rounded-xl border border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                            <span class="font-semibold text-slate-600 flex items-center gap-1.5">
                                 <span>📦 Miscellaneous / Others</span>
-                            </label>
-                            <div class="relative rounded-xl shadow-sm">
-                                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 font-bold text-sm">₱</span>
-                                <input type="number" name="other_spent" step="0.01" min="0" required placeholder="1200" class="block w-full pl-8 pr-4 py-2.5 text-sm font-medium border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
-                            </div>
+                            </span>
+                            <span class="font-extrabold text-slate-900">₱ {{ "{:,.2f}".format(history.categories.other) }}</span>
                         </div>
+                    </div>
+
+                    <!-- Total Average Baseline vs Target Budget -->
+                    <div class="p-4 rounded-2xl bg-blue-50/60 border border-blue-100 text-slate-800 space-y-2 mt-4">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="font-semibold text-slate-600">Average Historical Spend Pace:</span>
+                            <span class="font-black text-slate-900 text-sm">₱ {{ "{:,.2f}".format(history.total_spent) }}</span>
+                        </div>
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="font-semibold text-slate-600">Target Budget Limit ({{ target_month_name }}):</span>
+                            <span class="font-black text-blue-600 text-sm">
+                                {% if has_target_budget and target_budget_limit > 0 %}
+                                    ₱ {{ "{:,.2f}".format(target_budget_limit) }}
+                                {% else %}
+                                    <span class="text-rose-600 font-bold">Not configured</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                        {% if not has_target_budget or target_budget_limit <= 0 %}
+                        <div class="pt-2 border-t border-blue-200/60 text-[11px] text-amber-800 flex items-center justify-between">
+                            <span>Set a budget limit to calibrate this forecast:</span>
+                            <a href="{{ url_for('add_budget', month=target_month) }}" class="font-bold text-blue-600 hover:underline">
+                                Configure Budget &rarr;
+                            </a>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
 
-                <!-- Submit Button -->
-                <button type="submit" class="w-full py-3.5 px-6 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2 hover:-translate-y-0.5 cursor-pointer">
-                    <i data-lucide="cpu" class="w-4 h-4"></i>
-                    <span>Run Prediction</span>
-                </button>
-            </form>
+                {% else %}
+                <!-- Cold Start Alert Card -->
+                <div class="p-5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 space-y-2">
+                    <div class="flex items-center gap-2 font-bold text-sm text-amber-950">
+                        <i data-lucide="info" class="w-4 h-4 text-amber-600"></i>
+                        <span>Cold Start Notice: Awaiting Historical Records</span>
+                    </div>
+                    <p class="text-xs leading-relaxed text-amber-800">
+                        Automatic historical forecasting requires at least <strong>1 prior month of recorded transactions</strong>. As you log daily transactions, this engine will automatically learn your spending habits.
+                    </p>
+                    <div class="pt-2">
+                        <button type="button" onclick="switchPredictMode('manual')" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition">
+                            Switch to Manual Simulation &rarr;
+                        </button>
+                    </div>
+                </div>
+                {% endif %}
+
+            </div>
+
+            <!-- Panel 2: Manual Simulation (Playground) -->
+            <div id="panel-manual" class="space-y-5 {% if active_mode == 'auto' %}hidden{% endif %}">
+                <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 flex items-center gap-2">
+                    <i data-lucide="sliders-horizontal" class="w-4 h-4 text-blue-600 shrink-0"></i>
+                    <span>Test hypothetical spending scenarios by manually tweaking the parameters below.</span>
+                </div>
+
+                <form method="POST" action="{{ url_for('predict') }}" class="space-y-5">
+                    <input type="hidden" name="mode" value="manual">
+                    
+                    <!-- Section 1: Core Financials -->
+                    <div>
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2.5">Financial Targets</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Monthly Income</label>
+                                <div class="relative rounded-xl shadow-sm">
+                                    <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 font-bold text-sm">₱</span>
+                                    <input type="number" name="income" step="0.01" min="0" required value="{{ manual_inputs.get('income', target_income if target_income > 0 else '') }}" placeholder="35000" class="block w-full pl-8 pr-4 py-2.5 text-sm font-medium border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Budget Limit</label>
+                                <div class="relative rounded-xl shadow-sm">
+                                    <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 font-bold text-sm">₱</span>
+                                    <input type="number" name="budget_limit" step="0.01" min="0" required value="{{ manual_inputs.get('budget_limit', target_budget_limit if target_budget_limit > 0 else '') }}" placeholder="30000" class="block w-full pl-8 pr-4 py-2.5 text-sm font-medium border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                                </div>
+                            </div>
+
+                            <div class="sm:col-span-2">
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Days Passed in Month (1–31)</label>
+                                <div class="relative rounded-xl shadow-sm">
+                                    <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                        <i data-lucide="calendar" class="w-4 h-4"></i>
+                                    </span>
+                                    <input type="number" name="days_passed" min="1" max="31" required value="{{ manual_inputs.get('days_passed', 15) }}" placeholder="15" class="block w-full pl-10 pr-4 py-2.5 text-sm font-medium border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 2: Expense Breakdown -->
+                    <div>
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2.5">Simulated Category Spending</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">🍔 Food & Dining</label>
+                                <div class="relative rounded-xl shadow-sm">
+                                    <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 font-bold text-sm">₱</span>
+                                    <input type="number" name="food_spent" step="0.01" min="0" required value="{{ manual_inputs.get('food_spent', '') }}" placeholder="4500" class="block w-full pl-8 pr-4 py-2.5 text-sm font-medium border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">🚗 Transportation</label>
+                                <div class="relative rounded-xl shadow-sm">
+                                    <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 font-bold text-sm">₱</span>
+                                    <input type="number" name="transport_spent" step="0.01" min="0" required value="{{ manual_inputs.get('transport_spent', '') }}" placeholder="2500" class="block w-full pl-8 pr-4 py-2.5 text-sm font-medium border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">💡 Utilities & Bills</label>
+                                <div class="relative rounded-xl shadow-sm">
+                                    <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 font-bold text-sm">₱</span>
+                                    <input type="number" name="utilities_spent" step="0.01" min="0" required value="{{ manual_inputs.get('utilities_spent', '') }}" placeholder="1800" class="block w-full pl-8 pr-4 py-2.5 text-sm font-medium border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">🎮 Entertainment & Leisure</label>
+                                <div class="relative rounded-xl shadow-sm">
+                                    <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 font-bold text-sm">₱</span>
+                                    <input type="number" name="entertainment_spent" step="0.01" min="0" required value="{{ manual_inputs.get('entertainment_spent', '') }}" placeholder="2000" class="block w-full pl-8 pr-4 py-2.5 text-sm font-medium border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                                </div>
+                            </div>
+
+                            <div class="sm:col-span-2">
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">📦 Miscellaneous / Others</label>
+                                <div class="relative rounded-xl shadow-sm">
+                                    <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 font-bold text-sm">₱</span>
+                                    <input type="number" name="other_spent" step="0.01" min="0" required value="{{ manual_inputs.get('other_spent', '') }}" placeholder="1200" class="block w-full pl-8 pr-4 py-2.5 text-sm font-medium border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full py-3.5 px-6 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2 hover:-translate-y-0.5 cursor-pointer">
+                        <i data-lucide="cpu" class="w-4 h-4"></i>
+                        <span>Run Simulation</span>
+                    </button>
+                </form>
+            </div>
+
         </div>
 
-        <!-- Result / Guide Column (5 cols) -->
+        <!-- Right Column: Forecast Result & Architecture Info (5 cols) -->
         <div class="lg:col-span-5 space-y-6">
             
             {% if prediction %}
@@ -159,7 +288,7 @@
                         {% endif %}
                     </div>
                     <div>
-                        <p class="text-xs font-bold opacity-75">Forecast Outcome</p>
+                        <p class="text-xs font-bold opacity-75">Forecast for {{ target_month_name }}</p>
                         <h4 class="text-2xl font-black tracking-tight">{{ prediction }}</h4>
                     </div>
                 </div>
@@ -167,49 +296,59 @@
                 <!-- Recommendation Text -->
                 <div class="mt-6 pt-4 border-t border-black/10 text-xs sm:text-sm leading-relaxed">
                     {% if risk_level == 'HIGH' %}
-                    <p class="font-semibold">🚨 Warning: Current spend pace indicates your budget will be exhausted early. Immediate reduction of discretionary expenses (entertainment, dining out) is recommended.</p>
+                    <p class="font-semibold">🚨 Warning: Historical run-rate indicates your budget will be exhausted early. Immediate reduction of discretionary expenses (entertainment, dining out) is recommended.</p>
                     {% elif risk_level == 'MEDIUM' %}
-                    <p class="font-semibold">⚠️ Caution: You are approaching the safe spending threshold for this point in the month. Review pending purchases to maintain balance.</p>
+                    <p class="font-semibold">⚠️ Caution: You are approaching the safe spending threshold for {{ target_month_name }}. Review pending purchases to maintain balance.</p>
                     {% else %}
-                    <p class="font-semibold">✅ Excellent! Your financial habits are well within target boundaries. You are projected to finish the month with savings.</p>
+                    <p class="font-semibold">✅ Excellent! Your financial habits are well within target boundaries. You are projected to finish {{ target_month_name }} with savings.</p>
                     {% endif %}
                 </div>
             </div>
             {% else %}
             <!-- Placeholder Card when no prediction has been submitted yet -->
-            <div class="bg-white rounded-3xl p-7 border border-slate-100 shadow-sm text-center flex flex-col items-center justify-center min-h-[280px]">
+            <div class="bg-white rounded-3xl p-7 border border-slate-100 shadow-sm text-center flex flex-col items-center justify-center min-h-[260px]">
                 <div class="w-16 h-16 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mb-4">
                     <i data-lucide="brain-circuit" class="w-8 h-8"></i>
                 </div>
                 <h4 class="text-base font-bold text-slate-800">Awaiting Simulation Parameters</h4>
                 <p class="text-xs text-slate-400 mt-2 max-w-xs leading-relaxed">
-                    Fill in your budget and current spending figures on the left to evaluate your overspending risk with our machine learning engine.
+                    {% if not has_target_budget %}
+                    Please configure a budget limit for <strong>{{ target_month_name }}</strong> on the Budget tab to view your forecast.
+                    {% else %}
+                    Fill in parameters or select an active month on the left to evaluate your overspending risk.
+                    {% endif %}
                 </p>
             </div>
             {% endif %}
 
-            <!-- System Architecture Explainer Card -->
-            <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm space-y-3.5">
-                <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">How the Thesis Model Operates</h4>
-                <div class="space-y-3 text-xs text-slate-600">
-                    <div class="flex items-start gap-3">
-                        <div class="w-5 h-5 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 mt-0.5 font-bold text-[10px]">1</div>
-                        <p>Calculates burn rate ratio by comparing total spending against elapsed days.</p>
-                    </div>
-                    <div class="flex items-start gap-3">
-                        <div class="w-5 h-5 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 mt-0.5 font-bold text-[10px]">2</div>
-                        <p>Evaluates categorical weights (dining, utilities, leisure) trained on historical budgeting datasets.</p>
-                    </div>
-                    <div class="flex items-start gap-3">
-                        <div class="w-5 h-5 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 mt-0.5 font-bold text-[10px]">3</div>
-                        <p>Outputs probability distribution and classifies outcome into Low, Medium, or High Risk.</p>
-                    </div>
-                </div>
-            </div>
 
         </div>
 
     </div>
 
 </div>
+
+<script>
+    function switchPredictMode(mode) {
+        const autoPanel = document.getElementById('panel-auto');
+        const manualPanel = document.getElementById('panel-manual');
+        const btnAuto = document.getElementById('tab-btn-auto');
+        const btnManual = document.getElementById('tab-btn-manual');
+
+        if (mode === 'auto') {
+            autoPanel.classList.remove('hidden');
+            manualPanel.classList.add('hidden');
+            btnAuto.className = "px-3.5 py-1.5 text-xs font-bold rounded-xl transition bg-blue-600 text-white shadow-sm";
+            btnManual.className = "px-3.5 py-1.5 text-xs font-bold rounded-xl transition text-slate-600 hover:text-slate-900";
+        } else {
+            autoPanel.classList.add('hidden');
+            manualPanel.classList.remove('hidden');
+            btnAuto.className = "px-3.5 py-1.5 text-xs font-bold rounded-xl transition text-slate-600 hover:text-slate-900";
+            btnManual.className = "px-3.5 py-1.5 text-xs font-bold rounded-xl transition bg-blue-600 text-white shadow-sm";
+        }
+        if (window.lucide) {
+            lucide.createIcons();
+        }
+    }
+</script>
 {% endblock %}

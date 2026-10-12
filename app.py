@@ -196,6 +196,15 @@ def dashboard():
     selected_month_str = current_month_str
     selected_month_name = current_now.strftime('%B %Y')
 
+    # Parse requested trend period (default 6 months)
+    trend_period = request.args.get('trend_period', '6')
+    try:
+        trend_limit = int(trend_period)
+        if trend_limit not in [3, 6, 12]:
+            trend_limit = 6
+    except (ValueError, TypeError):
+        trend_limit = 6
+
     # Attempt to query live database values
     try:
         connection = get_db_connection()
@@ -260,19 +269,23 @@ def dashboard():
         )
         cat_rows = cursor.fetchall()
 
-        # 4. Fetch monthly spending trends (Multi-month line graph - remains completely unchanged)
+        # 4. Fetch monthly spending trends dynamically (Last 3, 6, or 12 months)
         cursor.execute(
             """
-            SELECT DATE_FORMAT(expense_date, '%b') as month_name,
-                   SUM(amount) as month_total,
-                   DATE_FORMAT(expense_date, '%Y-%m') as sort_key
-            FROM expenses
-            WHERE user_id = %s
-            GROUP BY sort_key, month_name
+            SELECT month_name, month_total, sort_key
+            FROM (
+                SELECT DATE_FORMAT(expense_date, '%b') as month_name,
+                       SUM(amount) as month_total,
+                       DATE_FORMAT(expense_date, '%Y-%m') as sort_key
+                FROM expenses
+                WHERE user_id = %s
+                GROUP BY sort_key, month_name
+                ORDER BY sort_key DESC
+                LIMIT %s
+            ) AS recent_trends
             ORDER BY sort_key ASC
-            LIMIT 6
             """,
-            (session['user_id'],)
+            (session['user_id'], trend_limit)
         )
         trend_rows = cursor.fetchall()
 
@@ -353,7 +366,7 @@ def dashboard():
             remaining_percentage = max(0, 100 - spent_percentage)
             savings_percentage = round((savings / monthly_income * 100)) if monthly_income > 0 else 0
 
-            if trend_rows and len(trend_rows) >= 2:
+            if trend_rows:
                 trend_labels = [r['month_name'] for r in trend_rows]
                 trend_amounts = [float(r['month_total']) for r in trend_rows]
 
@@ -373,6 +386,7 @@ def dashboard():
         category_data=category_data,
         trend_labels=trend_labels,
         trend_amounts=trend_amounts,
+        trend_period=trend_limit,
         expenses_history=expenses_history,
         available_months=available_months,
         selected_month_str=selected_month_str,
@@ -1008,6 +1022,123 @@ def load_ml_model_and_metadata():
 
 load_ml_model_and_metadata()
 
+# ==========================================
+# PREDICTIVE ML FEATURE HELPERS
+# ==========================================
+def normalize_category(cat_name):
+    """Normalize any database category variant into one of the 5 model feature categories."""
+    if not cat_name:
+        return 'other'
+    c = str(cat_name).strip().lower()
+    if any(k in c for k in ['food', 'dining', 'grocer', 'meal', 'restaurant']):
+        return 'food'
+    elif any(k in c for k in ['transport', 'commute', 'transit', 'gas', 'fuel', 'fare']):
+        return 'transport'
+    elif any(k in c for k in ['utilit', 'bill', 'water', 'electric', 'power', 'internet', 'wifi']):
+        return 'utilities'
+    elif any(k in c for k in ['entertain', 'leisure', 'game', 'movie', 'recreation', 'hobby']):
+        return 'entertainment'
+    else:
+        return 'other'
+
+def get_user_historical_spend(user_id, target_month_str=None, num_months=12):
+    """
+    Query TiDB for up to `num_months` (1 to 12 months) preceding `target_month_str`,
+    aggregate category totals using category normalization, and compute
+    the user's baseline average monthly spending run-rate.
+    """
+    if not target_month_str:
+        target_month_str = datetime.now().strftime('%Y-%m')
+
+    result = {
+        'has_history': False,
+        'months_count': 0,
+        'months_labels': [],
+        'categories': {
+            'food': 0.0,
+            'transport': 0.0,
+            'utilities': 0.0,
+            'entertainment': 0.0,
+            'other': 0.0
+        },
+        'total_spent': 0.0,
+        'monthly_average': 0.0
+    }
+
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+
+        # 1. Fetch up to `num_months` distinct historical months strictly prior to target_month
+        cursor.execute(
+            """
+            SELECT DISTINCT DATE_FORMAT(expense_date, '%Y-%m') as month_key,
+                            DATE_FORMAT(expense_date, '%M %Y') as month_label
+            FROM expenses
+            WHERE user_id = %s AND DATE_FORMAT(expense_date, '%Y-%m') < %s
+            ORDER BY month_key DESC
+            LIMIT %s
+            """,
+            (user_id, target_month_str, num_months)
+        )
+        historical_months = cursor.fetchall()
+
+        if not historical_months:
+            cursor.close()
+            connection.close()
+            return result
+
+        month_keys = [m['month_key'] for m in historical_months]
+        months_count = len(month_keys)
+
+        # 2. Fetch expenses for these historical months
+        format_strings = ','.join(['%s'] * months_count)
+        query = f"""
+            SELECT category, amount, DATE_FORMAT(expense_date, '%Y-%m') as month_key
+            FROM expenses
+            WHERE user_id = %s AND DATE_FORMAT(expense_date, '%Y-%m') IN ({format_strings})
+        """
+        params = [user_id] + month_keys
+        cursor.execute(query, tuple(params))
+        expense_rows = cursor.fetchall()
+        cursor.close()
+        connection.close()
+
+        # 3. Aggregate totals using category normalization
+        cat_sums = {
+            'food': 0.0,
+            'transport': 0.0,
+            'utilities': 0.0,
+            'entertainment': 0.0,
+            'other': 0.0
+        }
+
+        for exp in expense_rows:
+            norm_cat = normalize_category(exp.get('category'))
+            amt = float(exp.get('amount') or 0.0)
+            cat_sums[norm_cat] = cat_sums.get(norm_cat, 0.0) + amt
+
+        # 4. Compute monthly averages across the observed months
+        cat_averages = {
+            k: round(cat_sums[k] / months_count, 2)
+            for k in cat_sums
+        }
+        total_monthly_avg = round(sum(cat_averages.values()), 2)
+
+        result['has_history'] = True
+        result['months_count'] = months_count
+        # Reverse to show chronological order, e.g., ["July 2026", "August 2026", "September 2026"]
+        result['months_labels'] = [m['month_label'] for m in reversed(historical_months)]
+        result['categories'] = cat_averages
+        result['total_spent'] = total_monthly_avg
+        result['monthly_average'] = total_monthly_avg
+
+        return result
+
+    except Exception as e:
+        print(f"[ERROR in get_user_historical_spend]: {e}")
+        return result
+
 # Prediction page
 @app.route('/predict', methods=['GET', 'POST'])
 def predict():
@@ -1016,28 +1147,83 @@ def predict():
     if 'user_id' not in session:
         flash('Please login first!', 'error')
         return redirect(url_for('login'))
-    
+
+    current_now = datetime.now()
+    target_month = request.args.get('target_month') or request.form.get('target_month') or current_now.strftime('%Y-%m')
+    try:
+        target_month_name = datetime.strptime(target_month, '%Y-%m').strftime('%B %Y')
+    except Exception:
+        target_month_name = target_month
+
+    # Query historical spending (up to past 12 months)
+    history = get_user_historical_spend(session['user_id'], target_month, num_months=12)
+
+    # Query target month budget & income
+    target_income = 0.0
+    target_budget_limit = 0.0
+    has_target_budget = False
+
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute(
+            "SELECT monthly_income, budget_limit FROM budgets WHERE user_id = %s AND month_year = %s ORDER BY id DESC LIMIT 1",
+            (session['user_id'], target_month)
+        )
+        t_budget = cursor.fetchone()
+        if not t_budget:
+            cursor.execute(
+                "SELECT monthly_income, budget_limit FROM budgets WHERE user_id = %s ORDER BY id DESC LIMIT 1",
+                (session['user_id'],)
+            )
+            t_budget = cursor.fetchone()
+
+        if t_budget:
+            target_income = float(t_budget['monthly_income'])
+            target_budget_limit = float(t_budget['budget_limit'])
+            has_target_budget = True
+
+        cursor.close()
+        connection.close()
+    except Exception as e:
+        print(f"[ERROR fetching budget in predict]: {e}")
+
     prediction_result = None
     risk_level = None
     confidence = None
-    
-    if request.method == 'POST':
+    active_mode = 'auto' if history['has_history'] else 'manual'
+    manual_inputs = {}
+    percent_spent = 0.0
+
+    # Determine if manual simulation was posted
+    is_manual_post = request.method == 'POST' and (request.form.get('mode') == 'manual' or 'days_passed' in request.form)
+
+    if is_manual_post:
+        active_mode = 'manual'
         try:
-            # Get user input
-            income = float(request.form['income'])
-            budget_limit = float(request.form['budget_limit'])
-            days_passed = int(request.form['days_passed'])
-            food_spent = float(request.form['food_spent'])
-            transport_spent = float(request.form['transport_spent'])
-            utilities_spent = float(request.form['utilities_spent'])
-            entertainment_spent = float(request.form['entertainment_spent'])
-            other_spent = float(request.form['other_spent'])
-            
-            # Calculate totals
+            income = float(request.form.get('income', 0.0))
+            budget_limit = float(request.form.get('budget_limit', 0.0))
+            days_passed = int(request.form.get('days_passed', 1))
+            food_spent = float(request.form.get('food_spent', 0.0))
+            transport_spent = float(request.form.get('transport_spent', 0.0))
+            utilities_spent = float(request.form.get('utilities_spent', 0.0))
+            entertainment_spent = float(request.form.get('entertainment_spent', 0.0))
+            other_spent = float(request.form.get('other_spent', 0.0))
+
+            manual_inputs = {
+                'income': income,
+                'budget_limit': budget_limit,
+                'days_passed': days_passed,
+                'food_spent': food_spent,
+                'transport_spent': transport_spent,
+                'utilities_spent': utilities_spent,
+                'entertainment_spent': entertainment_spent,
+                'other_spent': other_spent
+            }
+
             total_spent = food_spent + transport_spent + utilities_spent + entertainment_spent + other_spent
             percent_spent = (total_spent / budget_limit * 100) if budget_limit > 0 else 0
-            
-            # Prepare features for prediction (same order as training!)
+
             features = np.array([[
                 income,
                 budget_limit,
@@ -1050,16 +1236,12 @@ def predict():
                 total_spent,
                 percent_spent
             ]])
-            
-            # Make prediction
+
             if ml_model is not None:
                 prediction = ml_model.predict(features)[0]
                 probabilities = ml_model.predict_proba(features)[0]
-                
-                # Get confidence
                 confidence = max(probabilities) * 100
-                
-                # Determine risk level
+
                 if prediction == 1:
                     prediction_result = "WILL OVERSPEND"
                     risk_level = "HIGH"
@@ -1073,19 +1255,70 @@ def predict():
                     else:
                         prediction_result = "SAFE"
                         risk_level = "LOW"
-                
-                flash('Prediction completed!', 'success')
+                flash('Manual simulation completed!', 'success')
             else:
                 flash('ML model not available!', 'error')
-                
         except Exception as e:
             flash(f'Error: {str(e)}', 'error')
-    
-    return render_template('predict.html',
-                         username=session.get('username', 'User'),
-                         prediction=prediction_result,
-                         risk_level=risk_level,
-                         confidence=confidence)
+
+    elif history['has_history'] and has_target_budget and target_budget_limit > 0:
+        # Automated forecast from historical baseline
+        active_mode = 'auto'
+        try:
+            total_spent = history['total_spent']
+            percent_spent = (total_spent / target_budget_limit * 100)
+
+            features = np.array([[
+                target_income,
+                target_budget_limit,
+                30,  # Full month projection horizon
+                history['categories']['food'],
+                history['categories']['transport'],
+                history['categories']['utilities'],
+                history['categories']['entertainment'],
+                history['categories']['other'],
+                total_spent,
+                percent_spent
+            ]])
+
+            if ml_model is not None:
+                prediction = ml_model.predict(features)[0]
+                probabilities = ml_model.predict_proba(features)[0]
+                confidence = max(probabilities) * 100
+
+                if prediction == 1:
+                    prediction_result = "WILL OVERSPEND"
+                    risk_level = "HIGH"
+                else:
+                    if percent_spent >= 80:
+                        prediction_result = "SAFE (but close!)"
+                        risk_level = "MEDIUM"
+                    elif percent_spent >= 70:
+                        prediction_result = "SAFE"
+                        risk_level = "MEDIUM"
+                    else:
+                        prediction_result = "SAFE"
+                        risk_level = "LOW"
+        except Exception as e:
+            print(f"[ERROR in auto prediction]: {e}")
+
+    return render_template(
+        'predict.html',
+        username=session.get('username', 'User'),
+        prediction=prediction_result,
+        risk_level=risk_level,
+        confidence=confidence,
+        history=history,
+        has_history=history['has_history'],
+        target_month=target_month,
+        target_month_name=target_month_name,
+        target_income=target_income,
+        target_budget_limit=target_budget_limit,
+        has_target_budget=has_target_budget,
+        active_mode=active_mode,
+        manual_inputs=manual_inputs,
+        percent_spent=percent_spent
+    )
 
 # ==========================================
 # ADMINISTRATIVE CONTROL & RBAC MODULES

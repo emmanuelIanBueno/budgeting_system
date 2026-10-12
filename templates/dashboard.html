@@ -178,9 +178,10 @@
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-base sm:text-lg font-bold text-slate-900">Monthly Spending Trend</h2>
                     <div class="relative">
-                        <select class="text-xs font-semibold text-slate-600 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer appearance-none">
-                            <option>Last 6 Months</option>
-                            <option>This Year</option>
+                        <select onchange="changeTrendPeriod(this.value)" class="text-xs font-semibold text-slate-600 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer appearance-none">
+                            <option value="3" {% if trend_period == 3 %}selected{% endif %}>Last 3 Months</option>
+                            <option value="6" {% if trend_period == 6 or not trend_period %}selected{% endif %}>Last 6 Months</option>
+                            <option value="12" {% if trend_period == 12 %}selected{% endif %}>Last 12 Months</option>
                         </select>
                         <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
                     </div>
@@ -418,6 +419,12 @@
             closeEditModal();
         }
     });
+
+    function changeTrendPeriod(period) {
+        const url = new URL(window.location.href);
+        url.searchParams.set('trend_period', period);
+        window.location.href = url.toString();
+    }
 
     document.addEventListener('DOMContentLoaded', () => {
         // Refresh icons on render
