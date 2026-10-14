@@ -196,6 +196,49 @@ def run_seed():
     sql_statements = []
     sql_statements.append("-- Seed Data for Thesis Demonstration Accounts")
     sql_statements.append("-- Target Forecasting Month: October 2026 (2026-10)\n")
+    sql_statements.append("CREATE DATABASE IF NOT EXISTS budgeting_db;")
+    sql_statements.append("USE budgeting_db;\n")
+    sql_statements.append("""CREATE TABLE IF NOT EXISTS users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    full_name VARCHAR(100),
+    email VARCHAR(100) UNIQUE NOT NULL,
+    contact_number VARCHAR(30),
+    password VARCHAR(255) NOT NULL,
+    role VARCHAR(20) DEFAULT 'user',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS budgets (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    monthly_income DECIMAL(10, 2) NOT NULL,
+    budget_limit DECIMAL(10, 2) NOT NULL,
+    month_year VARCHAR(7) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS expenses (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    category VARCHAR(50) NOT NULL,
+    amount DECIMAL(10, 2) NOT NULL,
+    description VARCHAR(255),
+    expense_date DATE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS activity_logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NULL,
+    username VARCHAR(50) NOT NULL,
+    user_role VARCHAR(20) DEFAULT 'user',
+    action VARCHAR(100) NOT NULL,
+    details TEXT,
+    ip_address VARCHAR(45),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+""")
 
     for u in users_data:
         uname = u["username"]
@@ -223,7 +266,10 @@ def run_seed():
         user_id = cursor.lastrowid
         print(f"\n[CREATED USER] {u['full_name']} (@{uname}) | ID: {user_id} | Password: {u['password_plain']}")
 
-        sql_statements.append(f"-- User: {u['full_name']} (@{uname})")
+        sql_statements.append(f"\n-- User: {u['full_name']} (@{uname})")
+        sql_statements.append(f"DELETE FROM expenses WHERE user_id IN (SELECT id FROM users WHERE username = '{uname}');")
+        sql_statements.append(f"DELETE FROM budgets WHERE user_id IN (SELECT id FROM users WHERE username = '{uname}');")
+        sql_statements.append(f"DELETE FROM users WHERE username = '{uname}';")
         sql_statements.append(
             f"INSERT INTO users (username, full_name, email, contact_number, password, role) "
             f"VALUES ('{uname}', '{u['full_name']}', '{u['email']}', '{u['contact_number']}', '{pwd_hash}', 'user');"

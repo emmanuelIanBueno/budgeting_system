@@ -1302,6 +1302,81 @@ def predict():
         except Exception as e:
             print(f"[ERROR in auto prediction]: {e}")
 
+    # Build Month-by-Month Outcome vs. Prediction Comparison Data
+    comparison_options = []
+    comparisons = {}
+    init_cmp = None
+    selected_comparison_month = target_month
+
+    try:
+        conn = get_db_connection()
+        c = conn.cursor(dictionary=True)
+
+        c.execute("""
+            SELECT DATE_FORMAT(expense_date, '%Y-%m') as m_key, SUM(amount) as total
+            FROM expenses
+            WHERE user_id = %s
+            GROUP BY m_key
+        """, (session['user_id'],))
+        exp_map = {r['m_key']: float(r['total']) for r in c.fetchall()}
+
+        c.execute("""
+            SELECT month_year as m_key, monthly_income, budget_limit
+            FROM budgets
+            WHERE user_id = %s
+            ORDER BY id ASC
+        """, (session['user_id'],))
+        b_map = {r['m_key']: {'income': float(r['monthly_income']), 'limit': float(r['budget_limit'])} for r in c.fetchall()}
+        default_b = list(b_map.values())[-1] if b_map else {'income': target_income, 'limit': target_budget_limit}
+        conn.close()
+
+        all_keys = sorted(set(list(exp_map.keys()) + list(b_map.keys()) + [target_month]), reverse=True)
+
+        for m_key in all_keys:
+            try:
+                m_label = datetime.strptime(m_key, '%Y-%m').strftime('%B %Y')
+            except Exception:
+                m_label = m_key
+
+            comparison_options.append({'key': m_key, 'label': m_label})
+
+            b_info = b_map.get(m_key, default_b)
+            m_income = b_info['income']
+            m_budget_limit = b_info['limit']
+
+            hist = get_user_historical_spend(session['user_id'], m_key, num_months=12)
+            has_pred = hist['has_history']
+            pred_spent = hist['total_spent'] if has_pred else 0.0
+
+            act_spent = exp_map.get(m_key, 0.0)
+            spent_diff = act_spent - pred_spent if has_pred else 0.0
+            saved_funds = m_budget_limit - act_spent if m_budget_limit > 0 else 0.0
+            is_saved = (act_spent <= m_budget_limit) if m_budget_limit > 0 else True
+            is_current = (m_key >= current_now.strftime('%Y-%m'))
+
+            comparisons[m_key] = {
+                'month_key': m_key,
+                'month_label': m_label,
+                'has_pred': has_pred,
+                'predicted_spent': pred_spent,
+                'expected_budget': m_budget_limit,
+                'actual_spent': act_spent,
+                'spent_diff': round(spent_diff, 2),
+                'saved_funds': round(saved_funds, 2),
+                'is_saved': is_saved,
+                'is_current': is_current
+            }
+
+        if target_month in comparisons:
+            selected_comparison_month = target_month
+        elif comparison_options:
+            selected_comparison_month = comparison_options[0]['key']
+
+        init_cmp = comparisons.get(selected_comparison_month)
+
+    except Exception as e:
+        print(f"[ERROR building month comparisons]: {e}")
+
     return render_template(
         'predict.html',
         username=session.get('username', 'User'),
@@ -1317,7 +1392,11 @@ def predict():
         has_target_budget=has_target_budget,
         active_mode=active_mode,
         manual_inputs=manual_inputs,
-        percent_spent=percent_spent
+        percent_spent=percent_spent,
+        comparison_options=comparison_options,
+        selected_comparison_month=selected_comparison_month,
+        init_cmp=init_cmp,
+        comparisons_json=comparisons
     )
 
 # ==========================================

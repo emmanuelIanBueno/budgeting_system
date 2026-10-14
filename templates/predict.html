@@ -321,9 +321,129 @@
             </div>
             {% endif %}
 
+            <!-- Monthly Outcome Comparison Card -->
+            <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-100 shadow-sm space-y-4">
+                <div class="flex items-center justify-between gap-3 border-b border-slate-100 pb-3.5">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                            <i data-lucide="scale" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-bold text-slate-800">Month Outcome Comparison</h4>
+                            <p class="text-[11px] text-slate-400">Predicted vs. actual spending</p>
+                        </div>
+                    </div>
+
+                    {% if comparison_options and comparison_options|length > 1 %}
+                    <!-- Month Selector Dropdown with arrow -->
+                    <div class="relative shrink-0">
+                        <select id="comparison-month-select" onchange="updateComparisonMonth(this.value)" class="appearance-none bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold rounded-xl pl-3 pr-8 py-1.5 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer shadow-2xs hover:bg-slate-100 transition">
+                            {% for opt in comparison_options %}
+                            <option value="{{ opt.key }}" {% if opt.key == selected_comparison_month %}selected{% endif %}>
+                                {{ opt.label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5 text-slate-400">
+                            <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+                        </div>
+                    </div>
+                    {% elif comparison_options %}
+                    <span class="text-xs font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg">
+                        {{ comparison_options[0].label }}
+                    </span>
+                    {% endif %}
+                </div>
+
+                <div class="overflow-hidden rounded-2xl border border-slate-100">
+                    <table class="w-full text-xs">
+                        <tbody class="divide-y divide-slate-100">
+                            <!-- Predicted Outcome -->
+                            <tr class="bg-slate-50/60">
+                                <td class="py-3 px-3.5 font-bold text-slate-700 align-top w-2/5">
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                                        <span>Predicted Outcome</span>
+                                    </div>
+                                </td>
+                                <td class="py-3 px-3.5 text-right">
+                                    <div class="font-bold text-slate-900" id="cmp-pred-spent">
+                                        Spent ₱ {{ "{:,.2f}".format(init_cmp.predicted_spent) if init_cmp else '0.00' }}
+                                    </div>
+                                    <div class="text-[11px] text-slate-400 mt-0.5" id="cmp-pred-budget">
+                                        expected budget ₱ {{ "{:,.2f}".format(init_cmp.expected_budget) if init_cmp else '0.00' }}
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <!-- Actual Outcome -->
+                            <tr>
+                                <td class="py-3 px-3.5 font-bold text-slate-700 align-top w-2/5">
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                                        <span>Actual Outcome</span>
+                                    </div>
+                                </td>
+                                <td class="py-3 px-3.5 text-right">
+                                    <div class="font-bold text-slate-900" id="cmp-act-spent">
+                                        Spent ₱ {{ "{:,.2f}".format(init_cmp.actual_spent) if init_cmp else '0.00' }}
+                                    </div>
+                                    <div class="text-[11px] text-slate-400 mt-0.5" id="cmp-act-budget">
+                                        expected budget ₱ {{ "{:,.2f}".format(init_cmp.expected_budget) if init_cmp else '0.00' }}
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <!-- Saved Budget -->
+                            <tr class="bg-slate-50/60">
+                                <td class="py-3 px-3.5 font-bold text-slate-700 align-top w-2/5">
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                        <span>Saved Budget</span>
+                                    </div>
+                                </td>
+                                <td class="py-3 px-3.5 text-right space-y-1">
+                                    <div class="font-bold text-xs" id="cmp-spent-diff">
+                                        {% if init_cmp %}
+                                            {% if init_cmp.is_current %}
+                                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                                                    <i data-lucide="clock" class="w-3.5 h-3.5 text-blue-600"></i>
+                                                    <span>In Progress</span>
+                                                </span>
+                                            {% elif init_cmp.spent_diff > 0 %}
+                                                <span class="text-amber-700 font-bold">+₱ {{ "{:,.2f}".format(init_cmp.spent_diff) }} vs. predicted</span>
+                                            {% elif init_cmp.spent_diff < 0 %}
+                                                <span class="text-emerald-700 font-bold">-₱ {{ "{:,.2f}".format(init_cmp.spent_diff|abs) }} vs. predicted</span>
+                                            {% else %}
+                                                <span class="text-slate-600 font-bold">₱ 0.00 (Matched predicted)</span>
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
+                                    <div id="cmp-saved-status">
+                                        {% if init_cmp %}
+                                            {% if init_cmp.is_current %}
+                                                <span class="text-[11px] text-slate-400">Outcome calculated at month end</span>
+                                            {% elif init_cmp.is_saved %}
+                                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-100 text-emerald-800">
+                                                    <i data-lucide="check" class="w-3 h-3"></i>
+                                                    Saved ₱ {{ "{:,.2f}".format(init_cmp.saved_funds) }}
+                                                </span>
+                                            {% else %}
+                                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-rose-100 text-rose-800">
+                                                    <i data-lucide="alert-circle" class="w-3 h-3"></i>
+                                                    Overspent by ₱ {{ "{:,.2f}".format(init_cmp.saved_funds|abs) }}
+                                                </span>
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
         </div>
-
     </div>
 
 </div>
@@ -346,6 +466,74 @@
             btnAuto.className = "px-3.5 py-1.5 text-xs font-bold rounded-xl transition text-slate-600 hover:text-slate-900";
             btnManual.className = "px-3.5 py-1.5 text-xs font-bold rounded-xl transition bg-blue-600 text-white shadow-sm";
         }
+        if (window.lucide) {
+            lucide.createIcons();
+        }
+    }
+
+    const monthComparisonData = {{ comparisons_json | tojson | safe }};
+
+    function updateComparisonMonth(monthKey) {
+        const data = monthComparisonData[monthKey];
+        if (!data) return;
+
+        const formatPhp = (val) => "₱ " + Number(val).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+        // Predicted Outcome
+        const predSpentEl = document.getElementById('cmp-pred-spent');
+        const predBudgetEl = document.getElementById('cmp-pred-budget');
+        if (predSpentEl) predSpentEl.textContent = "Spent " + formatPhp(data.predicted_spent);
+        if (predBudgetEl) predBudgetEl.textContent = "expected budget " + formatPhp(data.expected_budget);
+
+        // Actual Outcome
+        const actSpentEl = document.getElementById('cmp-act-spent');
+        const actBudgetEl = document.getElementById('cmp-act-budget');
+        if (actSpentEl) actSpentEl.textContent = "Spent " + formatPhp(data.actual_spent);
+        if (actBudgetEl) actBudgetEl.textContent = "expected budget " + formatPhp(data.expected_budget);
+
+        // Saved Budget (spent diff & saved funds)
+        const diffEl = document.getElementById('cmp-spent-diff');
+        const savedStatusEl = document.getElementById('cmp-saved-status');
+
+        if (data.is_current) {
+            if (diffEl) {
+                diffEl.innerHTML = `
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                        <i data-lucide="clock" class="w-3.5 h-3.5 text-blue-600"></i>
+                        <span>In Progress</span>
+                    </span>`;
+            }
+            if (savedStatusEl) {
+                savedStatusEl.innerHTML = `<span class="text-[11px] text-slate-400">Outcome calculated at month end</span>`;
+            }
+        } else {
+            if (diffEl) {
+                if (data.spent_diff > 0) {
+                    diffEl.innerHTML = `<span class="text-amber-700 font-bold">+${formatPhp(data.spent_diff)} vs. predicted</span>`;
+                } else if (data.spent_diff < 0) {
+                    diffEl.innerHTML = `<span class="text-emerald-700 font-bold">-${formatPhp(Math.abs(data.spent_diff))} vs. predicted</span>`;
+                } else {
+                    diffEl.innerHTML = `<span class="text-slate-600 font-bold">₱ 0.00 (Matched predicted)</span>`;
+                }
+            }
+
+            if (savedStatusEl) {
+                if (data.is_saved) {
+                    savedStatusEl.innerHTML = `
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-100 text-emerald-800">
+                            <i data-lucide="check" class="w-3 h-3"></i>
+                            Saved ${formatPhp(data.saved_funds)}
+                        </span>`;
+                } else {
+                    savedStatusEl.innerHTML = `
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-rose-100 text-rose-800">
+                            <i data-lucide="alert-circle" class="w-3 h-3"></i>
+                            Overspent by ${formatPhp(Math.abs(data.saved_funds))}
+                        </span>`;
+                }
+            }
+        }
+
         if (window.lucide) {
             lucide.createIcons();
         }

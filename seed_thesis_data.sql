@@ -1,8 +1,56 @@
 -- Seed Data for Thesis Demonstration Accounts
 -- Target Forecasting Month: October 2026 (2026-10)
 
+CREATE DATABASE IF NOT EXISTS budgeting_db;
+USE budgeting_db;
+
+CREATE TABLE IF NOT EXISTS users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    full_name VARCHAR(100),
+    email VARCHAR(100) UNIQUE NOT NULL,
+    contact_number VARCHAR(30),
+    password VARCHAR(255) NOT NULL,
+    role VARCHAR(20) DEFAULT 'user',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS budgets (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    monthly_income DECIMAL(10, 2) NOT NULL,
+    budget_limit DECIMAL(10, 2) NOT NULL,
+    month_year VARCHAR(7) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS expenses (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    category VARCHAR(50) NOT NULL,
+    amount DECIMAL(10, 2) NOT NULL,
+    description VARCHAR(255),
+    expense_date DATE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS activity_logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NULL,
+    username VARCHAR(50) NOT NULL,
+    user_role VARCHAR(20) DEFAULT 'user',
+    action VARCHAR(100) NOT NULL,
+    details TEXT,
+    ip_address VARCHAR(45),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
 -- User: Sophia Santos (@sophia)
-INSERT INTO users (username, full_name, email, contact_number, password, role) VALUES ('sophia', 'Sophia Santos', 'sophia@trimex.edu.ph', '09171234567', 'scrypt:32768:8:1$rTrSfZolsOnqvbq4$80f36e30440c3f802fdeb140990143409fcaf19790e8c4c6e14fc18baf5444f0b7d5f55b6ade79721c57f55c496d668406c36df8bfd9d5e806ba6cfdcdbd4a0c', 'user');
+DELETE FROM expenses WHERE user_id IN (SELECT id FROM users WHERE username = 'sophia');
+DELETE FROM budgets WHERE user_id IN (SELECT id FROM users WHERE username = 'sophia');
+DELETE FROM users WHERE username = 'sophia';
+INSERT INTO users (username, full_name, email, contact_number, password, role) VALUES ('sophia', 'Sophia Santos', 'sophia@trimex.edu.ph', '09171234567', 'scrypt:32768:8:1$JTMNOFJajLYlj5zQ$003081e175c70494e33c338e45205a6960b8a9935a7b5e1a6b43eb66e9f3a018aaed9ad713e5f3afd1f1d47b34ab18b2357eccc646e76b132a2b1af9cfea2c6f', 'user');
 SET @user_sophia_id = LAST_INSERT_ID();
 INSERT INTO budgets (user_id, monthly_income, budget_limit, month_year) VALUES (@user_sophia_id, 35000.0, 25000.0, '2026-07');
 INSERT INTO budgets (user_id, monthly_income, budget_limit, month_year) VALUES (@user_sophia_id, 35000.0, 25000.0, '2026-08');
@@ -35,8 +83,12 @@ INSERT INTO expenses (user_id, category, amount, description, expense_date) VALU
 INSERT INTO expenses (user_id, category, amount, description, expense_date) VALUES (@user_sophia_id, 'Utilities', 1499.0, 'PLDT Home Fiber Internet', '2026-09-15');
 INSERT INTO expenses (user_id, category, amount, description, expense_date) VALUES (@user_sophia_id, 'Entertainment', 1510.0, 'Streaming & Cinema Outing', '2026-09-22');
 INSERT INTO expenses (user_id, category, amount, description, expense_date) VALUES (@user_sophia_id, 'Other', 1490.0, 'Personal Care Essentials', '2026-09-28');
+
 -- User: Marcus Reyes (@marcus)
-INSERT INTO users (username, full_name, email, contact_number, password, role) VALUES ('marcus', 'Marcus Reyes', 'marcus@trimex.edu.ph', '09187654321', 'scrypt:32768:8:1$PqKqfNB6HzcpASis$9ea4c15c8d6b9a0999e4b6d3d76953e0dce2e30fdeed2cc8217a17113614a6f24c266f9e5bf720b0763ae2b2d4bc02dba82f9185b3569506e57d664746814bce', 'user');
+DELETE FROM expenses WHERE user_id IN (SELECT id FROM users WHERE username = 'marcus');
+DELETE FROM budgets WHERE user_id IN (SELECT id FROM users WHERE username = 'marcus');
+DELETE FROM users WHERE username = 'marcus';
+INSERT INTO users (username, full_name, email, contact_number, password, role) VALUES ('marcus', 'Marcus Reyes', 'marcus@trimex.edu.ph', '09187654321', 'scrypt:32768:8:1$3BpR9DPUMi0b6oKJ$b45f09d5c41c9f16ae69821b88a124bb23219ab35f344604a668c78fd01ee8c6551877a396ec3d8e90db01b4cae35e9dfabdb51a73bd2d40526addbc84326f0a', 'user');
 SET @user_marcus_id = LAST_INSERT_ID();
 INSERT INTO budgets (user_id, monthly_income, budget_limit, month_year) VALUES (@user_marcus_id, 30000.0, 20000.0, '2026-04');
 INSERT INTO budgets (user_id, monthly_income, budget_limit, month_year) VALUES (@user_marcus_id, 30000.0, 20000.0, '2026-05');
@@ -105,8 +157,12 @@ INSERT INTO expenses (user_id, category, amount, description, expense_date) VALU
 INSERT INTO expenses (user_id, category, amount, description, expense_date) VALUES (@user_marcus_id, 'Entertainment', 3580.0, 'Gaming Battle Pass & Titles', '2026-09-11');
 INSERT INTO expenses (user_id, category, amount, description, expense_date) VALUES (@user_marcus_id, 'Entertainment', 2190.0, 'Bar Outing with Friends', '2026-09-24');
 INSERT INTO expenses (user_id, category, amount, description, expense_date) VALUES (@user_marcus_id, 'Other', 2811.0, 'Shopee 9.9 Mega Sale Purchases', '2026-09-27');
+
 -- User: Elena Cruz (@elena)
-INSERT INTO users (username, full_name, email, contact_number, password, role) VALUES ('elena', 'Elena Cruz', 'elena@trimex.edu.ph', '09199887766', 'scrypt:32768:8:1$aQtjRDWkMrV6krks$47ecc90736de9fd6d3cbe2f63cf580253664e6d5760253ae6406834ed6d0b6e26f1984c84d6d4ce72abdfdd3cc0a831ce91c29fcc969f7e882a17155239c397a', 'user');
+DELETE FROM expenses WHERE user_id IN (SELECT id FROM users WHERE username = 'elena');
+DELETE FROM budgets WHERE user_id IN (SELECT id FROM users WHERE username = 'elena');
+DELETE FROM users WHERE username = 'elena';
+INSERT INTO users (username, full_name, email, contact_number, password, role) VALUES ('elena', 'Elena Cruz', 'elena@trimex.edu.ph', '09199887766', 'scrypt:32768:8:1$VMzDjXGjEkVSLRI3$5f2bdf7aa84bdc183f0a164c1a704eb9a3cd3b30ef62b2e9583fd8ab8524d95bdefd56ded9ef06a5ae16191497ebcc20c73e5cd9b89ff2a3685868c0cdc62ed5', 'user');
 SET @user_elena_id = LAST_INSERT_ID();
 INSERT INTO budgets (user_id, monthly_income, budget_limit, month_year) VALUES (@user_elena_id, 28000.0, 22000.0, '2025-10');
 INSERT INTO budgets (user_id, monthly_income, budget_limit, month_year) VALUES (@user_elena_id, 28000.0, 22000.0, '2025-11');
