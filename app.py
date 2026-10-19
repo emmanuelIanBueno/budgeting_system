@@ -1344,9 +1344,9 @@ def predict():
             m_income = b_info['income']
             m_budget_limit = b_info['limit']
 
-            hist = get_user_historical_spend(session['user_id'], m_key, num_months=12)
-            has_pred = hist['has_history']
-            pred_spent = hist['total_spent'] if has_pred else 0.0
+            prior_months = [k for k in sorted(exp_map.keys()) if k < m_key][-12:]
+            has_pred = len(prior_months) > 0
+            pred_spent = round(sum(exp_map[k] for k in prior_months) / len(prior_months), 2) if has_pred else 0.0
 
             act_spent = exp_map.get(m_key, 0.0)
             spent_diff = act_spent - pred_spent if has_pred else 0.0
