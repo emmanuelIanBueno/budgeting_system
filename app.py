@@ -1,5 +1,7 @@
+import os
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, abort
 import mysql.connector
+from mysql.connector import pooling
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 from functools import wraps
@@ -66,8 +68,42 @@ def log_activity(username, user_role, action, details='', user_id=None):
         print(f"Notice: Failed to record activity log ({e})")
 
 
-# Database connection function
+# Global connection pool for high-performance connection reuse
+_db_pool = None
+
+def _get_pool():
+    global _db_pool
+    if _db_pool is None:
+        kwargs = {
+            'host': os.environ.get('DB_HOST', 'localhost'),
+            'user': os.environ.get('DB_USER', 'root'),
+            'password': os.environ.get('DB_PASSWORD', ''),
+            'database': os.environ.get('DB_NAME', 'budgeting_db'),
+            'port': int(os.environ.get('DB_PORT', 3306))
+        }
+        if os.environ.get('DB_SSL_VERIFY', '').lower() in ['1', 'true', 'yes'] or kwargs['port'] == 4000:
+            kwargs['ssl_verify_cert'] = True
+        try:
+            _db_pool = pooling.MySQLConnectionPool(
+                pool_name="budget_pool",
+                pool_size=5,
+                pool_reset_session=True,
+                **kwargs
+            )
+        except Exception as e:
+            print(f"Notice: Failed to initialize MySQL connection pool ({e})")
+            return None
+    return _db_pool
+
+# Database connection function with connection pooling
 def get_db_connection():
+    pool = _get_pool()
+    if pool:
+        try:
+            return pool.get_connection()
+        except Exception as e:
+            print(f"Notice: Pool connection retrieval failed ({e}), falling back to direct connection.")
+
     kwargs = {
         'host': os.environ.get('DB_HOST', 'localhost'),
         'user': os.environ.get('DB_USER', 'root'),
@@ -75,7 +111,6 @@ def get_db_connection():
         'database': os.environ.get('DB_NAME', 'budgeting_db'),
         'port': int(os.environ.get('DB_PORT', 3306))
     }
-    # Enable SSL when running against TiDB Cloud or secure cloud MySQL
     if os.environ.get('DB_SSL_VERIFY', '').lower() in ['1', 'true', 'yes'] or kwargs['port'] == 4000:
         kwargs['ssl_verify_cert'] = True
     return mysql.connector.connect(**kwargs)

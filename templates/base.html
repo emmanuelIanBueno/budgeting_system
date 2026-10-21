@@ -39,11 +39,11 @@
         }
     </script>
     
-    <!-- Chart.js CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chart.js CDN (deferred to eliminate render-blocking) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
 
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Lucide Icons (deferred to avoid blocking DOM parsing) -->
+    <script src="https://unpkg.com/lucide@latest" defer></script>
 
     <style>
         body {
