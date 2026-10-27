@@ -265,7 +265,7 @@
             
             {% if prediction %}
             <!-- Prediction Output Card -->
-            <div class="rounded-3xl p-6 sm:p-7 border shadow-md transition-all {% if risk_level == 'HIGH' %}bg-rose-50/90 border-rose-200 text-rose-950{% elif risk_level == 'MEDIUM' %}bg-amber-50/90 border-amber-200 text-amber-950{% else %}bg-emerald-50/90 border-emerald-200 text-emerald-950{% endif %}">
+            <div id="auto-forecast-result-card" class="rounded-3xl p-6 sm:p-7 border shadow-md transition-all {% if risk_level == 'HIGH' %}bg-rose-50/90 border-rose-200 text-rose-950{% elif risk_level == 'MEDIUM' %}bg-amber-50/90 border-amber-200 text-amber-950{% else %}bg-emerald-50/90 border-emerald-200 text-emerald-950{% endif %}">
                 
                 <div class="flex items-center justify-between gap-2 mb-4">
                     <span class="inline-flex items-center justify-center text-center text-xs font-bold uppercase tracking-wider px-3.5 py-1.5 rounded-full {% if risk_level == 'HIGH' %}bg-rose-100 text-rose-700 border border-rose-200{% elif risk_level == 'MEDIUM' %}bg-amber-100 text-amber-700 border border-amber-200{% else %}bg-emerald-100 text-emerald-700 border border-emerald-200{% endif %}">
@@ -288,7 +288,7 @@
                         {% endif %}
                     </div>
                     <div>
-                        <p class="text-xs font-bold opacity-75">Forecast for {{ target_month_name }}</p>
+                        <p class="text-xs font-bold opacity-75">{% if active_mode == 'manual' %}Manual Simulation Result{% else %}Forecast for {{ target_month_name }}{% endif %}</p>
                         <h4 class="text-2xl font-black tracking-tight">{{ prediction }}</h4>
                     </div>
                 </div>
@@ -296,13 +296,24 @@
                 <!-- Recommendation Text -->
                 <div class="mt-6 pt-4 border-t border-black/10 text-xs sm:text-sm leading-relaxed">
                     {% if risk_level == 'HIGH' %}
-                    <p class="font-semibold">🚨 Warning: Historical run-rate indicates your budget will be exhausted early. Immediate reduction of discretionary expenses (entertainment, dining out) is recommended.</p>
+                    <p class="font-semibold">🚨 Warning: {% if active_mode == 'manual' %}Simulated spending velocity indicates your budget will be exhausted early. Immediate reduction of discretionary expenses (entertainment, dining out) is recommended.{% else %}Historical run-rate indicates your budget will be exhausted early. Immediate reduction of discretionary expenses (entertainment, dining out) is recommended.{% endif %}</p>
                     {% elif risk_level == 'MEDIUM' %}
-                    <p class="font-semibold">⚠️ Caution: You are approaching the safe spending threshold for {{ target_month_name }}. Review pending purchases to maintain balance.</p>
+                    <p class="font-semibold">⚠️ Caution: {% if active_mode == 'manual' %}Simulated spending approaches the safe threshold. Review purchases to maintain balance.{% else %}You are approaching the safe spending threshold for {{ target_month_name }}. Review pending purchases to maintain balance.{% endif %}</p>
                     {% else %}
-                    <p class="font-semibold">✅ Excellent! Your financial habits are well within target boundaries. You are projected to finish {{ target_month_name }} with savings.</p>
+                    <p class="font-semibold">✅ Excellent! {% if active_mode == 'manual' %}Simulated parameters are well within target boundaries.{% else %}Your financial habits are well within target boundaries. You are projected to finish {{ target_month_name }} with savings.{% endif %}</p>
                     {% endif %}
                 </div>
+            </div>
+
+            <!-- Neutral Placeholder Card for Manual Simulation Mode -->
+            <div id="manual-sim-placeholder" class="bg-white rounded-3xl p-7 border border-slate-100 shadow-sm text-center flex flex-col items-center justify-center min-h-[260px] hidden">
+                <div class="w-16 h-16 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mb-4">
+                    <i data-lucide="sliders-horizontal" class="w-8 h-8"></i>
+                </div>
+                <h4 class="text-base font-bold text-slate-800">Manual Simulation Mode</h4>
+                <p class="text-xs text-slate-400 mt-2 max-w-xs leading-relaxed">
+                    Adjust parameters on the left and click <strong>Run Simulation</strong> to view prediction.
+                </p>
             </div>
             {% else %}
             <!-- Placeholder Card when no prediction has been submitted yet -->
@@ -450,21 +461,36 @@
 
 <script>
     function switchPredictMode(mode) {
+        {% if active_mode == 'manual' %}
+        if (mode === 'auto') {
+            window.location.href = "{{ url_for('predict', target_month=target_month) }}";
+            return;
+        }
+        {% endif %}
+
         const autoPanel = document.getElementById('panel-auto');
         const manualPanel = document.getElementById('panel-manual');
         const btnAuto = document.getElementById('tab-btn-auto');
         const btnManual = document.getElementById('tab-btn-manual');
+        const autoResultCard = document.getElementById('auto-forecast-result-card');
+        const manualPlaceholder = document.getElementById('manual-sim-placeholder');
 
         if (mode === 'auto') {
             autoPanel.classList.remove('hidden');
             manualPanel.classList.add('hidden');
             btnAuto.className = "px-3.5 py-1.5 text-xs font-bold rounded-xl transition bg-blue-600 text-white shadow-sm";
             btnManual.className = "px-3.5 py-1.5 text-xs font-bold rounded-xl transition text-slate-600 hover:text-slate-900";
+
+            if (autoResultCard) autoResultCard.classList.remove('hidden');
+            if (manualPlaceholder) manualPlaceholder.classList.add('hidden');
         } else {
             autoPanel.classList.add('hidden');
             manualPanel.classList.remove('hidden');
             btnAuto.className = "px-3.5 py-1.5 text-xs font-bold rounded-xl transition text-slate-600 hover:text-slate-900";
             btnManual.className = "px-3.5 py-1.5 text-xs font-bold rounded-xl transition bg-blue-600 text-white shadow-sm";
+
+            if (autoResultCard) autoResultCard.classList.add('hidden');
+            if (manualPlaceholder) manualPlaceholder.classList.remove('hidden');
         }
         if (window.lucide) {
             lucide.createIcons();
